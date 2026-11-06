@@ -1,0 +1,12 @@
+node_modules/
+frontend/dist/
+backend/target/
+backend/src/main/resources/static/
+data/
+.env
+.env.*
+!.env.example
+.tools/
+output/
+*.log
+.playwright-cli/

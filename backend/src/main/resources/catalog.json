@@ -1,0 +1,1729 @@
+[
+  {
+    "id": "CF-2197-A",
+    "platform": "CF",
+    "code": "2197A",
+    "title": "Friendly Numbers",
+    "url": "https://codeforces.com/problemset/problem/2197/A",
+    "tags": [
+      "二分",
+      "数学"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2114-A",
+    "platform": "CF",
+    "code": "2114A",
+    "title": "Square Year",
+    "url": "https://codeforces.com/problemset/problem/2114/A",
+    "tags": [
+      "二分",
+      "数学"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2051-B",
+    "platform": "CF",
+    "code": "2051B",
+    "title": "Journey",
+    "url": "https://codeforces.com/problemset/problem/2051/B",
+    "tags": [
+      "二分",
+      "数学"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2237-C",
+    "platform": "CF",
+    "code": "2237C",
+    "title": "Duck Surplus",
+    "url": "https://codeforces.com/problemset/problem/2237/C",
+    "tags": [
+      "二分",
+      "贪心"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2156-B",
+    "platform": "CF",
+    "code": "2156B",
+    "title": "Strange Machine",
+    "url": "https://codeforces.com/problemset/problem/2156/B",
+    "tags": [
+      "二分",
+      "贪心",
+      "模拟"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1809-B",
+    "platform": "CF",
+    "code": "1809B",
+    "title": "Points on Plane",
+    "url": "https://codeforces.com/problemset/problem/1809/B",
+    "tags": [
+      "二分",
+      "贪心",
+      "数学"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2227-D",
+    "platform": "CF",
+    "code": "2227D",
+    "title": "Palindromex",
+    "url": "https://codeforces.com/problemset/problem/2227/D",
+    "tags": [
+      "二分",
+      "数据结构",
+      "贪心",
+      "模拟",
+      "双指针"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2218-E",
+    "platform": "CF",
+    "code": "2218E",
+    "title": "The 67th XOR Problem",
+    "url": "https://codeforces.com/problemset/problem/2218/E",
+    "tags": [
+      "二分"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2148-E",
+    "platform": "CF",
+    "code": "2148E",
+    "title": "Split",
+    "url": "https://codeforces.com/problemset/problem/2148/E",
+    "tags": [
+      "二分",
+      "数据结构",
+      "双指针"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2252-C",
+    "platform": "CF",
+    "code": "2252C",
+    "title": "Risky Tower",
+    "url": "https://codeforces.com/problemset/problem/2252/C",
+    "tags": [
+      "二分",
+      "数据结构",
+      "贪心"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2227-E",
+    "platform": "CF",
+    "code": "2227E",
+    "title": "It All Went Sideways",
+    "url": "https://codeforces.com/problemset/problem/2227/E",
+    "tags": [
+      "二分",
+      "数据结构",
+      "动态规划",
+      "贪心"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2171-D",
+    "platform": "CF",
+    "code": "2171D",
+    "title": "Rae Taylor and Trees (easy version)",
+    "url": "https://codeforces.com/problemset/problem/2171/D",
+    "tags": [
+      "二分",
+      "数据结构",
+      "动态规划",
+      "贪心",
+      "模拟"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2264-A",
+    "platform": "CF",
+    "code": "2264A",
+    "title": "Rumb Needs a Hand",
+    "url": "https://codeforces.com/problemset/problem/2264/A",
+    "tags": [
+      "模拟",
+      "双指针"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2259-A",
+    "platform": "CF",
+    "code": "2259A",
+    "title": "Moo Language School",
+    "url": "https://codeforces.com/problemset/problem/2259/A",
+    "tags": [
+      "贪心",
+      "双指针"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2154-A",
+    "platform": "CF",
+    "code": "2154A",
+    "title": "Notelock",
+    "url": "https://codeforces.com/problemset/problem/2154/A",
+    "tags": [
+      "贪心",
+      "双指针"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2143-B",
+    "platform": "CF",
+    "code": "2143B",
+    "title": "Discounts",
+    "url": "https://codeforces.com/problemset/problem/2143/B",
+    "tags": [
+      "贪心",
+      "双指针"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2034-B",
+    "platform": "CF",
+    "code": "2034B",
+    "title": "Rakhsh's Revival",
+    "url": "https://codeforces.com/problemset/problem/2034/B",
+    "tags": [
+      "数据结构",
+      "贪心",
+      "模拟",
+      "双指针"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1847-B",
+    "platform": "CF",
+    "code": "1847B",
+    "title": "Hamon Odyssey",
+    "url": "https://codeforces.com/problemset/problem/1847/B",
+    "tags": [
+      "贪心",
+      "双指针"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2234-C",
+    "platform": "CF",
+    "code": "2234C",
+    "title": "Vessels, Heights and Two Versions (Easy Version)",
+    "url": "https://codeforces.com/problemset/problem/2234/C",
+    "tags": [
+      "搜索",
+      "贪心",
+      "模拟",
+      "双指针"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2174-A",
+    "platform": "CF",
+    "code": "2174A",
+    "title": "Needle in a Haystack",
+    "url": "https://codeforces.com/problemset/problem/2174/A",
+    "tags": [
+      "贪心",
+      "字符串",
+      "双指针"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2267-D",
+    "platform": "CF",
+    "code": "2267D",
+    "title": "Backrooms Hill",
+    "url": "https://codeforces.com/problemset/problem/2267/D",
+    "tags": [
+      "动态规划",
+      "贪心",
+      "双指针"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2190-B1",
+    "platform": "CF",
+    "code": "2190B1",
+    "title": "Sub-RBS (Easy Version)",
+    "url": "https://codeforces.com/problemset/problem/2190/B1",
+    "tags": [
+      "动态规划",
+      "贪心",
+      "字符串",
+      "双指针"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2123-E",
+    "platform": "CF",
+    "code": "2123E",
+    "title": "MEX Count",
+    "url": "https://codeforces.com/problemset/problem/2123/E",
+    "tags": [
+      "二分",
+      "数据结构",
+      "贪心",
+      "双指针"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2274-A",
+    "platform": "CF",
+    "code": "2274A",
+    "title": "The Projections of Paco",
+    "url": "https://codeforces.com/problemset/problem/2274/A",
+    "tags": [
+      "搜索",
+      "动态规划",
+      "模拟",
+      "数学"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1598-A",
+    "platform": "CF",
+    "code": "1598A",
+    "title": "Computer Game",
+    "url": "https://codeforces.com/problemset/problem/1598/A",
+    "tags": [
+      "搜索",
+      "动态规划",
+      "模拟"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1549-B",
+    "platform": "CF",
+    "code": "1549B",
+    "title": "Gregor and the Pawn Game",
+    "url": "https://codeforces.com/problemset/problem/1549/B",
+    "tags": [
+      "搜索",
+      "动态规划",
+      "图论",
+      "贪心",
+      "模拟"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1829-D",
+    "platform": "CF",
+    "code": "1829D",
+    "title": "Gold Rush",
+    "url": "https://codeforces.com/problemset/problem/1829/D",
+    "tags": [
+      "搜索",
+      "动态规划",
+      "模拟"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1033-A",
+    "platform": "CF",
+    "code": "1033A",
+    "title": "King Escape",
+    "url": "https://codeforces.com/problemset/problem/1033/A",
+    "tags": [
+      "搜索",
+      "图论",
+      "模拟"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1020-B",
+    "platform": "CF",
+    "code": "1020B",
+    "title": "Badge",
+    "url": "https://codeforces.com/problemset/problem/1020/B",
+    "tags": [
+      "搜索",
+      "图论"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2257-C",
+    "platform": "CF",
+    "code": "2257C",
+    "title": "Spying on the Beaver",
+    "url": "https://codeforces.com/problemset/problem/2257/C",
+    "tags": [
+      "搜索",
+      "图论"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1941-D",
+    "platform": "CF",
+    "code": "1941D",
+    "title": "Rudolf and the Ball Game",
+    "url": "https://codeforces.com/problemset/problem/1941/D",
+    "tags": [
+      "搜索",
+      "动态规划",
+      "模拟"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2238-C",
+    "platform": "CF",
+    "code": "2238C",
+    "title": "Village Guilds",
+    "url": "https://codeforces.com/problemset/problem/2238/C",
+    "tags": [
+      "搜索",
+      "动态规划"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2204-D",
+    "platform": "CF",
+    "code": "2204D",
+    "title": "Alternating Path",
+    "url": "https://codeforces.com/problemset/problem/2204/D",
+    "tags": [
+      "搜索",
+      "图论"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2114-E",
+    "platform": "CF",
+    "code": "2114E",
+    "title": "Kirei Attacks the Estate",
+    "url": "https://codeforces.com/problemset/problem/2114/E",
+    "tags": [
+      "搜索",
+      "动态规划",
+      "贪心"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2247-A",
+    "platform": "CF",
+    "code": "2247A",
+    "title": "Zero Sum",
+    "url": "https://codeforces.com/problemset/problem/2247/A",
+    "tags": [
+      "动态规划"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2244-A",
+    "platform": "CF",
+    "code": "2244A",
+    "title": "Iskander and Drawings",
+    "url": "https://codeforces.com/problemset/problem/2244/A",
+    "tags": [
+      "动态规划",
+      "贪心",
+      "字符串"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2203-B",
+    "platform": "CF",
+    "code": "2203B",
+    "title": "Beautiful Numbers",
+    "url": "https://codeforces.com/problemset/problem/2203/B",
+    "tags": [
+      "动态规划",
+      "贪心",
+      "数学"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2114-C",
+    "platform": "CF",
+    "code": "2114C",
+    "title": "Need More Arrays",
+    "url": "https://codeforces.com/problemset/problem/2114/C",
+    "tags": [
+      "动态规划",
+      "贪心"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2104-B",
+    "platform": "CF",
+    "code": "2104B",
+    "title": "Move to the End",
+    "url": "https://codeforces.com/problemset/problem/2104/B",
+    "tags": [
+      "数据结构",
+      "动态规划",
+      "贪心",
+      "模拟"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2244-D",
+    "platform": "CF",
+    "code": "2244D",
+    "title": "Yaroslav and Productivity",
+    "url": "https://codeforces.com/problemset/problem/2244/D",
+    "tags": [
+      "动态规划",
+      "贪心",
+      "数学"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2202-B",
+    "platform": "CF",
+    "code": "2202B",
+    "title": "ABAB Construction",
+    "url": "https://codeforces.com/problemset/problem/2202/B",
+    "tags": [
+      "动态规划",
+      "贪心",
+      "模拟"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2182-C",
+    "platform": "CF",
+    "code": "2182C",
+    "title": "Production of Snowmen",
+    "url": "https://codeforces.com/problemset/problem/2182/C",
+    "tags": [
+      "动态规划"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2266-E",
+    "platform": "CF",
+    "code": "2266E",
+    "title": "Prime Destruction",
+    "url": "https://codeforces.com/problemset/problem/2266/E",
+    "tags": [
+      "动态规划",
+      "数学"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2246-C",
+    "platform": "CF",
+    "code": "2246C",
+    "title": "0mar and Alternating Sums",
+    "url": "https://codeforces.com/problemset/problem/2246/C",
+    "tags": [
+      "动态规划",
+      "数学"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2276-A",
+    "platform": "CF",
+    "code": "2276A",
+    "title": "Perfect Sandwiches",
+    "url": "https://codeforces.com/problemset/problem/2276/A",
+    "tags": [
+      "贪心",
+      "数学"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2269-A",
+    "platform": "CF",
+    "code": "2269A",
+    "title": "SauSaGe Bank",
+    "url": "https://codeforces.com/problemset/problem/2269/A",
+    "tags": [
+      "贪心",
+      "数学"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2267-A",
+    "platform": "CF",
+    "code": "2267A",
+    "title": "Turn Into a Palindrome",
+    "url": "https://codeforces.com/problemset/problem/2267/A",
+    "tags": [
+      "贪心",
+      "字符串"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2266-C",
+    "platform": "CF",
+    "code": "2266C",
+    "title": "AND, OR, Sort!",
+    "url": "https://codeforces.com/problemset/problem/2266/C",
+    "tags": [
+      "贪心",
+      "字符串"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2264-B",
+    "platform": "CF",
+    "code": "2264B",
+    "title": "Knife's Pill Farm",
+    "url": "https://codeforces.com/problemset/problem/2264/B",
+    "tags": [
+      "数据结构",
+      "贪心",
+      "数学"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2259-C",
+    "platform": "CF",
+    "code": "2259C",
+    "title": "101",
+    "url": "https://codeforces.com/problemset/problem/2259/C",
+    "tags": [
+      "贪心"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2268-A",
+    "platform": "CF",
+    "code": "2268A",
+    "title": "K Is Important",
+    "url": "https://codeforces.com/problemset/problem/2268/A",
+    "tags": [
+      "贪心"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2267-C",
+    "platform": "CF",
+    "code": "2267C",
+    "title": "GCD Treasury",
+    "url": "https://codeforces.com/problemset/problem/2267/C",
+    "tags": [
+      "贪心",
+      "数学"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2262-A1",
+    "platform": "CF",
+    "code": "2262A1",
+    "title": "Floor of MEX (Easy Version)",
+    "url": "https://codeforces.com/problemset/problem/2262/A1",
+    "tags": [
+      "贪心"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2271-C",
+    "platform": "CF",
+    "code": "2271C",
+    "title": "XOR Problem",
+    "url": "https://codeforces.com/problemset/problem/2271/C",
+    "tags": [
+      "图论",
+      "贪心",
+      "数学"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1944-A",
+    "platform": "CF",
+    "code": "1944A",
+    "title": "Destroying Bridges",
+    "url": "https://codeforces.com/problemset/problem/1944/A",
+    "tags": [
+      "图论",
+      "贪心",
+      "数学"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1797-A",
+    "platform": "CF",
+    "code": "1797A",
+    "title": "Li Hua and Maze",
+    "url": "https://codeforces.com/problemset/problem/1797/A",
+    "tags": [
+      "图论",
+      "贪心",
+      "模拟"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-500-A",
+    "platform": "CF",
+    "code": "500A",
+    "title": "New Year Transportation",
+    "url": "https://codeforces.com/problemset/problem/500/A",
+    "tags": [
+      "搜索",
+      "图论",
+      "模拟"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1647-B",
+    "platform": "CF",
+    "code": "1647B",
+    "title": "Madoka and the Elegant Gift",
+    "url": "https://codeforces.com/problemset/problem/1647/B",
+    "tags": [
+      "图论",
+      "模拟"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1581-B",
+    "platform": "CF",
+    "code": "1581B",
+    "title": "Diameter of Graph",
+    "url": "https://codeforces.com/problemset/problem/1581/B",
+    "tags": [
+      "图论",
+      "贪心",
+      "数学"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2276-D",
+    "platform": "CF",
+    "code": "2276D",
+    "title": "Caveman",
+    "url": "https://codeforces.com/problemset/problem/2276/D",
+    "tags": [
+      "图论"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2271-A",
+    "platform": "CF",
+    "code": "2271A",
+    "title": "Robot Odd Moves",
+    "url": "https://codeforces.com/problemset/problem/2271/A",
+    "tags": [
+      "数学"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2261-C",
+    "platform": "CF",
+    "code": "2261C",
+    "title": "I Know About a Million Things",
+    "url": "https://codeforces.com/problemset/problem/2261/C",
+    "tags": [
+      "数学"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2256-B",
+    "platform": "CF",
+    "code": "2256B",
+    "title": "Domino Tiles",
+    "url": "https://codeforces.com/problemset/problem/2256/B",
+    "tags": [
+      "模拟",
+      "数学"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2224-B",
+    "platform": "CF",
+    "code": "2224B",
+    "title": "Zhily and Mex and Max",
+    "url": "https://codeforces.com/problemset/problem/2224/B",
+    "tags": [
+      "贪心",
+      "数学"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2266-D",
+    "platform": "CF",
+    "code": "2266D",
+    "title": "Falling Concrete",
+    "url": "https://codeforces.com/problemset/problem/2266/D",
+    "tags": [
+      "数据结构",
+      "数学"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2257-A",
+    "platform": "CF",
+    "code": "2257A",
+    "title": "Creating Abbreviations",
+    "url": "https://codeforces.com/problemset/problem/2257/A",
+    "tags": [
+      "字符串"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2276-B",
+    "platform": "CF",
+    "code": "2276B",
+    "title": "Replace and Compress",
+    "url": "https://codeforces.com/problemset/problem/2276/B",
+    "tags": [
+      "模拟",
+      "字符串"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2192-B",
+    "platform": "CF",
+    "code": "2192B",
+    "title": "Flipping Binary String",
+    "url": "https://codeforces.com/problemset/problem/2192/B",
+    "tags": [
+      "字符串"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2149-D",
+    "platform": "CF",
+    "code": "2149D",
+    "title": "A and B",
+    "url": "https://codeforces.com/problemset/problem/2149/D",
+    "tags": [
+      "字符串"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2048-C",
+    "platform": "CF",
+    "code": "2048C",
+    "title": "Kevin and Binary Strings",
+    "url": "https://codeforces.com/problemset/problem/2048/C",
+    "tags": [
+      "贪心",
+      "模拟",
+      "字符串"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2244-E",
+    "platform": "CF",
+    "code": "2244E",
+    "title": "Masha and the Garland",
+    "url": "https://codeforces.com/problemset/problem/2244/E",
+    "tags": [
+      "数据结构",
+      "动态规划",
+      "贪心",
+      "模拟",
+      "数学",
+      "字符串"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2045-C",
+    "platform": "CF",
+    "code": "2045C",
+    "title": "Saraga",
+    "url": "https://codeforces.com/problemset/problem/2045/C",
+    "tags": [
+      "贪心",
+      "字符串"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2275-B",
+    "platform": "CF",
+    "code": "2275B",
+    "title": "Did Not Go to Print",
+    "url": "https://codeforces.com/problemset/problem/2275/B",
+    "tags": [
+      "数据结构",
+      "模拟"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2252-A",
+    "platform": "CF",
+    "code": "2252A",
+    "title": "Boss Fight",
+    "url": "https://codeforces.com/problemset/problem/2252/A",
+    "tags": [
+      "数据结构",
+      "贪心"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2133-A",
+    "platform": "CF",
+    "code": "2133A",
+    "title": "Redstone?",
+    "url": "https://codeforces.com/problemset/problem/2133/A",
+    "tags": [
+      "数据结构",
+      "模拟",
+      "数学"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2275-C",
+    "platform": "CF",
+    "code": "2275C",
+    "title": "Unrequited Love",
+    "url": "https://codeforces.com/problemset/problem/2275/C",
+    "tags": [
+      "数据结构"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2242-B",
+    "platform": "CF",
+    "code": "2242B",
+    "title": "Predominant Frequency Division",
+    "url": "https://codeforces.com/problemset/problem/2242/B",
+    "tags": [
+      "数据结构",
+      "贪心",
+      "模拟",
+      "数学"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2135-A",
+    "platform": "CF",
+    "code": "2135A",
+    "title": "Against the Difference",
+    "url": "https://codeforces.com/problemset/problem/2135/A",
+    "tags": [
+      "数据结构",
+      "动态规划"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2275-A",
+    "platform": "CF",
+    "code": "2275A",
+    "title": "In Search of Convenience",
+    "url": "https://codeforces.com/problemset/problem/2275/A",
+    "tags": [
+      "模拟"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2269-B",
+    "platform": "CF",
+    "code": "2269B",
+    "title": "KiaKio and Squared Numbers",
+    "url": "https://codeforces.com/problemset/problem/2269/B",
+    "tags": [
+      "模拟"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2255-A",
+    "platform": "CF",
+    "code": "2255A",
+    "title": "Hot Potatoes at the Fairy Warehouse",
+    "url": "https://codeforces.com/problemset/problem/2255/A",
+    "tags": [
+      "贪心",
+      "模拟"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-2231-C",
+    "platform": "CF",
+    "code": "2231C",
+    "title": "Chipmunk Theo and Equality",
+    "url": "https://codeforces.com/problemset/problem/2231/C",
+    "tags": [
+      "模拟"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-1324-D",
+    "platform": "CF",
+    "code": "1324D",
+    "title": "Pair of Topics",
+    "url": "https://codeforces.com/problemset/problem/1324/D",
+    "tags": [
+      "二分",
+      "数据结构",
+      "双指针"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-977-E",
+    "platform": "CF",
+    "code": "977E",
+    "title": "Cyclic Components",
+    "url": "https://codeforces.com/problemset/problem/977/E",
+    "tags": [
+      "搜索",
+      "图论"
+    ],
+    "rating": 1500,
+    "difficulty": "1500",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-706-B",
+    "platform": "CF",
+    "code": "706B",
+    "title": "Interesting drink",
+    "url": "https://codeforces.com/problemset/problem/706/B",
+    "tags": [
+      "二分",
+      "动态规划",
+      "模拟"
+    ],
+    "rating": 1100,
+    "difficulty": "1100",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-580-C",
+    "platform": "CF",
+    "code": "580C",
+    "title": "Kefa and Park",
+    "url": "https://codeforces.com/problemset/problem/580/C",
+    "tags": [
+      "搜索",
+      "图论"
+    ],
+    "rating": 1500,
+    "difficulty": "1500",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-492-B",
+    "platform": "CF",
+    "code": "492B",
+    "title": "Vanya and Lanterns",
+    "url": "https://codeforces.com/problemset/problem/492/B",
+    "tags": [
+      "二分",
+      "模拟",
+      "数学"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-474-B",
+    "platform": "CF",
+    "code": "474B",
+    "title": "Worms",
+    "url": "https://codeforces.com/problemset/problem/474/B",
+    "tags": [
+      "二分",
+      "模拟"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-363-B",
+    "platform": "CF",
+    "code": "363B",
+    "title": "Fence",
+    "url": "https://codeforces.com/problemset/problem/363/B",
+    "tags": [
+      "动态规划"
+    ],
+    "rating": 1100,
+    "difficulty": "1100",
+    "minutes": 40,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-282-A",
+    "platform": "CF",
+    "code": "282A",
+    "title": "Bit++",
+    "url": "https://codeforces.com/problemset/problem/282/A",
+    "tags": [
+      "模拟"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-279-B",
+    "platform": "CF",
+    "code": "279B",
+    "title": "Books",
+    "url": "https://codeforces.com/problemset/problem/279/B",
+    "tags": [
+      "二分",
+      "模拟",
+      "双指针"
+    ],
+    "rating": 1400,
+    "difficulty": "1400",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-231-A",
+    "platform": "CF",
+    "code": "231A",
+    "title": "Team",
+    "url": "https://codeforces.com/problemset/problem/231/A",
+    "tags": [
+      "贪心"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-230-B",
+    "platform": "CF",
+    "code": "230B",
+    "title": "T-primes",
+    "url": "https://codeforces.com/problemset/problem/230/B",
+    "tags": [
+      "二分",
+      "模拟",
+      "数学"
+    ],
+    "rating": 1300,
+    "difficulty": "1300",
+    "minutes": 55,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-158-A",
+    "platform": "CF",
+    "code": "158A",
+    "title": "Next Round",
+    "url": "https://codeforces.com/problemset/problem/158/A",
+    "tags": [
+      "模拟"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-71-A",
+    "platform": "CF",
+    "code": "71A",
+    "title": "Way Too Long Words",
+    "url": "https://codeforces.com/problemset/problem/71/A",
+    "tags": [
+      "字符串"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "CF-4-A",
+    "platform": "CF",
+    "code": "4A",
+    "title": "Watermelon",
+    "url": "https://codeforces.com/problemset/problem/4/A",
+    "tags": [
+      "数学"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库快照 2026-11-06"
+  },
+  {
+    "id": "LG-P2249",
+    "platform": "LG",
+    "code": "P2249",
+    "title": "【深基13.例1】查找",
+    "url": "https://www.luogu.com.cn/problem/P2249",
+    "tags": [
+      "二分"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 35,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1102",
+    "platform": "LG",
+    "code": "P1102",
+    "title": "A-B 数对",
+    "url": "https://www.luogu.com.cn/problem/P1102",
+    "tags": [
+      "二分"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 40,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1873",
+    "platform": "LG",
+    "code": "P1873",
+    "title": "[COCI 2011/2012 #5] EKO / 砍树",
+    "url": "https://www.luogu.com.cn/problem/P1873",
+    "tags": [
+      "二分"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 40,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P2440",
+    "platform": "LG",
+    "code": "P2440",
+    "title": "木材加工",
+    "url": "https://www.luogu.com.cn/problem/P2440",
+    "tags": [
+      "二分"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 40,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1162",
+    "platform": "LG",
+    "code": "P1162",
+    "title": "填涂颜色",
+    "url": "https://www.luogu.com.cn/problem/P1162",
+    "tags": [
+      "搜索"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 45,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1025",
+    "platform": "LG",
+    "code": "P1025",
+    "title": "[NOIP 2001 提高组] 数的划分",
+    "url": "https://www.luogu.com.cn/problem/P1025",
+    "tags": [
+      "搜索"
+    ],
+    "rating": null,
+    "difficulty": "普及/提高−",
+    "minutes": 60,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1605",
+    "platform": "LG",
+    "code": "P1605",
+    "title": "迷宫",
+    "url": "https://www.luogu.com.cn/problem/P1605",
+    "tags": [
+      "搜索"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 45,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1451",
+    "platform": "LG",
+    "code": "P1451",
+    "title": "求细胞数量",
+    "url": "https://www.luogu.com.cn/problem/P1451",
+    "tags": [
+      "搜索"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 40,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1219",
+    "platform": "LG",
+    "code": "P1219",
+    "title": "[USACO1.5] 八皇后 Checker Challenge",
+    "url": "https://www.luogu.com.cn/problem/P1219",
+    "tags": [
+      "搜索"
+    ],
+    "rating": null,
+    "difficulty": "普及/提高−",
+    "minutes": 60,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1048",
+    "platform": "LG",
+    "code": "P1048",
+    "title": "[NOIP 2005 普及组] 采药",
+    "url": "https://www.luogu.com.cn/problem/P1048",
+    "tags": [
+      "动态规划"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 45,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1049",
+    "platform": "LG",
+    "code": "P1049",
+    "title": "[NOIP 2001 普及组] 装箱问题",
+    "url": "https://www.luogu.com.cn/problem/P1049",
+    "tags": [
+      "动态规划"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 45,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1216",
+    "platform": "LG",
+    "code": "P1216",
+    "title": "[IOI 1994] 数字三角形 Number Triangles",
+    "url": "https://www.luogu.com.cn/problem/P1216",
+    "tags": [
+      "动态规划"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 35,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1803",
+    "platform": "LG",
+    "code": "P1803",
+    "title": "凌乱的yyy / 线段覆盖",
+    "url": "https://www.luogu.com.cn/problem/P1803",
+    "tags": [
+      "贪心"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 40,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1090",
+    "platform": "LG",
+    "code": "P1090",
+    "title": "[NOIP 2004 提高组] 合并果子",
+    "url": "https://www.luogu.com.cn/problem/P1090",
+    "tags": [
+      "贪心"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 40,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P3371",
+    "platform": "LG",
+    "code": "P3371",
+    "title": "【模板】单源最短路径（弱化版）",
+    "url": "https://www.luogu.com.cn/problem/P3371",
+    "tags": [
+      "图论"
+    ],
+    "rating": null,
+    "difficulty": "普及/提高−",
+    "minutes": 60,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P3367",
+    "platform": "LG",
+    "code": "P3367",
+    "title": "【模板】并查集",
+    "url": "https://www.luogu.com.cn/problem/P3367",
+    "tags": [
+      "数据结构"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 40,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P3375",
+    "platform": "LG",
+    "code": "P3375",
+    "title": "【模板】KMP",
+    "url": "https://www.luogu.com.cn/problem/P3375",
+    "tags": [
+      "字符串"
+    ],
+    "rating": null,
+    "difficulty": "普及/提高−",
+    "minutes": 60,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P3383",
+    "platform": "LG",
+    "code": "P3383",
+    "title": "【模板】线性筛素数",
+    "url": "https://www.luogu.com.cn/problem/P3383",
+    "tags": [
+      "数学"
+    ],
+    "rating": null,
+    "difficulty": "普及−",
+    "minutes": 40,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  }
+]
