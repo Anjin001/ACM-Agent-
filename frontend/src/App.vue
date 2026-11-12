@@ -35,6 +35,7 @@ import TaskList from './components/TaskList.vue'
 import CapabilityProfile from './components/CapabilityProfile.vue'
 import MemoryPanel from './components/MemoryPanel.vue'
 import CodeWorkspace from './components/CodeWorkspace.vue'
+import TimedAssessment from './components/TimedAssessment.vue'
 import { api, ApiError } from './api'
 import type {
   AppState,
@@ -844,6 +845,10 @@ onUnmounted(() => {
         </template>
 
         <template v-if="page === 'plan'">
+          <p v-if="workspace?.profile.competitionDate" class="notice">
+            <Target :size="16" />目标比赛日期 {{ workspace.profile.competitionDate }}
+          </p>
+          <TimedAssessment v-if="!state.demo" :key="state.username" :problems="problemMap" :sync-job="syncJob" @sync="synchronize" />
           <div class="page-heading">
             <div>
               <h1>把目标，安排进这一周。</h1>
@@ -1182,6 +1187,11 @@ onUnmounted(() => {
                     <Check v-if="draft.topics.includes(name)" :size="13" />{{ name }}
                   </button>
                 </div>
+                <label>目标比赛日期<input v-model="draft.competitionDate" type="date" /></label>
+                <label>荣誉与参赛经历<textarea v-model="draft.achievements" rows="3" maxlength="800"
+                  placeholder="可填写比赛名称、名次，以及你在个人赛或团队赛中的经历" />
+                  <span class="field-hint">自填背景供教练参考，能力等级仍依据训练记录。</span>
+                </label>
               </section>
               <section class="panel form-panel">
                 <h2>每周可用时间</h2>

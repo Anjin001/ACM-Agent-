@@ -29,10 +29,12 @@ public class CoachController {
     private final CodeReviewer reviewer;
     private final CodeWorkspaceService codeWorkspaces;
     private final LocalCodeFiles localFiles;
+    private final AssessmentService assessments;
 
     public CoachController(CoachStore store, Planner planner, AiCoach ai, CodeforcesClient cf,
                            CoachMemory memory, MemoryStore memoryStore, ProfileModeler modeler, CodeReviewer reviewer,
-                           LocalAiSettings aiSettings, CodeWorkspaceService codeWorkspaces, LocalCodeFiles localFiles) {
+                           LocalAiSettings aiSettings, CodeWorkspaceService codeWorkspaces, LocalCodeFiles localFiles,
+                           AssessmentService assessments) {
         this.store = store;
         this.planner = planner;
         this.ai = ai;
@@ -44,6 +46,7 @@ public class CoachController {
         this.reviewer = reviewer;
         this.codeWorkspaces = codeWorkspaces;
         this.localFiles = localFiles;
+        this.assessments = assessments;
     }
 
     @GetMapping("/health")
@@ -125,6 +128,17 @@ public class CoachController {
         if (profile.dailyMinutes == null || profile.dailyMinutes.size() != 7 || profile.dailyMinutes.stream().anyMatch(minutes -> minutes == null || minutes < 0 || minutes > 480)) bad("每天可用时间需在 0～480 分钟之间");
         long id = userId(session);
         Snapshot snapshot = checked(id, body.revision());
+        profile.achievements = Objects.toString(profile.achievements, "").strip();
+        if (profile.achievements.length() > 800) bad("荣誉和参赛经历最多 800 个字符");
+        profile.competitionDate = Objects.toString(profile.competitionDate, "").strip();
+        if (!profile.competitionDate.isEmpty()) {
+            try {
+                if (!profile.competitionDate.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")) bad("请输入有效的比赛日期");
+                java.time.LocalDate.parse(profile.competitionDate);
+            } catch (java.time.format.DateTimeParseException ex) {
+                bad("请输入有效的比赛日期");
+            }
+        }
         snapshot.workspace().profile = profile;
         snapshot.workspace().proposal = null;
         store.save(id, snapshot.revision(), snapshot.workspace());
@@ -299,6 +313,26 @@ public class CoachController {
     }
 
     // ---------------------------------------------------------------- 代码审查
+
+    @GetMapping("/assessment")
+    public AssessmentService.State assessment(HttpSession session) {
+        return assessments.state(codeWorkspaceAccount(session).id());
+    }
+
+    @PostMapping("/assessment")
+    public AssessmentService.State startAssessment(HttpSession session) {
+        return assessments.start(codeWorkspaceAccount(session).id());
+    }
+
+    @PostMapping("/assessment/{id}/end")
+    public AssessmentService.State endAssessment(@PathVariable String id, HttpSession session) {
+        return assessments.end(codeWorkspaceAccount(session).id(), id);
+    }
+
+    @PostMapping("/assessment/{id}/settle")
+    public AssessmentService.State settleAssessment(@PathVariable String id, HttpSession session) {
+        return assessments.settle(codeWorkspaceAccount(session).id(), id);
+    }
 
     @PostMapping("/code/local")
     public LocalCodeFiles.FolderInfo openLocalCode(@RequestBody LocalCodeFiles.OpenFolder body, HttpServletRequest request) {

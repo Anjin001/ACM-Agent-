@@ -1,6 +1,8 @@
 export interface Profile {
   name: string
   handle: string
+  competitionDate: string
+  achievements: string
   goal: string
   topics: string[]
   level: number

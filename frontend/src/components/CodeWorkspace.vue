@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { FolderOpen, LoaderCircle, Send } from 'lucide-vue-next'
 import { api, ApiError } from '../api'
 
@@ -84,6 +84,8 @@ function find(page = 0) {
 function view(file: string, line: number) {
   void run('view', async () => {
     source.value = await api<Source>('/code/local/file?' + new URLSearchParams({ file, line: String(line) }))
+    await nextTick()
+    document.getElementById('workspace-source-preview')?.scrollIntoView({ block: 'nearest' })
   })
 }
 
@@ -178,7 +180,7 @@ onMounted(() => run('load', async () => {
         <button type="submit" class="button outline" :disabled="!!busy">搜索</button>
       </form>
       <ul class="workspace-files">
-        <li v-for="hit in hits" :key="hit.file">
+        <li v-for="hit in hits" :key="hit.file + ':' + hit.line">
           <button type="button" class="workspace-link" :disabled="!!busy" @click="view(hit.file, hit.line)">
             {{ hit.file }}<template v-if="hit.text">:{{ hit.line }} · {{ hit.text }}</template>
           </button>
@@ -190,7 +192,7 @@ onMounted(() => run('load', async () => {
         <button v-if="hits.length === 60" class="button outline" type="button" :disabled="!!busy" @click="find(offset + 60)">下一页</button>
       </div>
     </div>
-    <section v-if="source" class="workspace-selection">
+    <section v-if="source" id="workspace-source-preview" class="workspace-selection">
       <div class="workspace-header">
         <strong>{{ source.file }}</strong>
         <button class="button outline" type="button" @click="source = null">关闭预览</button>
@@ -244,7 +246,12 @@ onMounted(() => run('load', async () => {
         <summary>源码证据（{{ report.evidence.length }}）</summary>
         <ul class="workspace-evidence">
           <li v-for="(item, index) in report.evidence" :key="index">
-            <strong>{{ item.topic }}</strong> <code>{{ item.file }}:{{ item.line }}</code>
+            <strong>{{ item.topic }}</strong>
+            <button v-if="folder" type="button" class="workspace-link" :disabled="!!busy"
+              title="在当前打开的目录查看对应位置" @click="view(item.file, item.line)">
+              <code>{{ item.file }}:{{ item.line }}</code>
+            </button>
+            <code v-else>{{ item.file }}:{{ item.line }}</code>
             <p>{{ item.observation }}</p>
           </li>
         </ul>

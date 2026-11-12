@@ -48,16 +48,27 @@ public class Planner {
         Map<String, Double> calibration = calibration(workspace);
         Set<String> used = new HashSet<>();
         plan.tasks.forEach(task -> used.add(task.problemId));
-        String focus = workspace.feedback.stream()
+        Map<String, Problem> catalog = new HashMap<>();
+        store.problems().forEach(problem -> catalog.put(problem.id, problem));
+        var assessment = workspace.assessment != null && !workspace.assessment.results.isEmpty()
+                ? workspace.assessment : workspace.assessmentHistory.stream().findFirst().orElse(null);
+        String assessmentFocus = assessment == null ? "" : assessment.results.stream()
+                .filter(result -> "attempted".equals(result.status()))
+                .map(result -> catalog.get(result.problemId())).filter(Objects::nonNull)
+                .flatMap(problem -> problem.tags.stream()).filter(workspace.profile.topics::contains)
+                .findFirst().orElse("");
+        String focus = !assessmentFocus.isEmpty() ? assessmentFocus : workspace.feedback.stream()
                 .filter(feedback -> !feedback.outcome.equals("independent"))
                 .reduce((first, second) -> second)
-                .flatMap(feedback -> store.problems().stream().filter(problem -> problem.id.equals(feedback.problemId)).findFirst())
+                .map(feedback -> catalog.get(feedback.problemId))
                 .map(problem -> problem.tags.isEmpty() ? "" : problem.tags.get(0)).orElse("");
         List<Problem> available = new ArrayList<>(candidates(userId, workspace));
+        if (!assessmentFocus.isEmpty()) available.removeIf(problem -> assessment.problemIds.contains(problem.id));
         available.sort(Comparator.comparingInt((Problem problem) -> problem.tags.contains(focus) ? 0 : 1)
                 .thenComparingInt(problem -> problem.minutes));
         int firstDay = today.getDayOfWeek().getValue() - 1;
         int added = 0;
+        boolean usedAssessment = false;
         for (int day = firstDay; day < 7; day++) {
             final int taskDay = day;
             int usedMinutes = plan.tasks.stream().filter(task -> task.day == taskDay).mapToInt(task -> task.minutes).sum();
@@ -72,11 +83,13 @@ public class Planner {
                 task.day = day;
                 task.minutes = minutes;
                 task.reason = problem.tags.contains(focus)
-                        ? "针对最近参考题解或卡住的专题，再安排一次独立练习。"
+                        ? (!assessmentFocus.isEmpty() ? "最近短测中该专题有尝试但未通过，安排一道不同题目复核。"
+                            : "针对最近参考题解或卡住的专题，再安排一次独立练习。")
                         : "符合你选择的" + String.join("、", problem.tags.stream().filter(workspace.profile.topics::contains).toList()) + "专题，预计用时适合当天安排。";
                 if (minutes != problem.minutes) {
                     task.reason += "用时按你在这个专题的实际记录校准为 " + minutes + " 分钟。";
                 }
+                usedAssessment |= !assessmentFocus.isEmpty() && problem.tags.contains(focus);
                 plan.tasks.add(task);
                 used.add(problem.id);
                 remaining -= minutes;
@@ -88,6 +101,7 @@ public class Planner {
                 ? "本周剩余时段没有能容纳的候选题。可以增加可用时间、调整专题或同步更多题目。"
                 : "已保留有训练记录的任务，按本周剩余时段安排 " + added + " 道新题。" + (focus.isEmpty() ? "" : "优先巩固近期需要帮助的" + focus + "专题。");
         plan.basis = new ArrayList<>(memory.stream().limit(2).toList());
+        if (usedAssessment) plan.basis.add(0, "最近限时短测中，" + assessmentFocus + "有提交但未通过");
         return plan;
     }
 

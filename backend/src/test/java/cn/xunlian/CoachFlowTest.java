@@ -229,7 +229,7 @@ class CoachFlowTest {
         MockHttpSession session = register();
         MockHttpSession other = register();
         Files.createDirectories(root.resolve("solutions"));
-        Files.writeString(root.resolve("solutions/main.cpp"), "// local\nint gcd(int a, int b);");
+        Files.writeString(root.resolve("solutions/main.cpp"), "// local\nint gcd(int a, int b);\nint result = gcd(2, 4);");
         Files.createDirectories(root.resolve("build"));
         Files.writeString(root.resolve("build/ignored.cpp"), "int ignored;");
         JsonNode opened = send(session, "POST", "/api/code/local", Map.of("path", root.toString()));
@@ -238,6 +238,7 @@ class CoachFlowTest {
                 .param("q", "gcd").param("content", "true")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         assertThat(hit.path(0).path("file").asText()).isEqualTo("solutions/main.cpp");
         assertThat(hit.path(0).path("line").asInt()).isEqualTo(2);
+        assertThat(hit.path(1).path("line").asInt()).isEqualTo(3);
         mvc.perform(get("/api/code/local/file").session(session).param("file", "solutions/main.cpp").param("line", "2"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.lines[0]").value("int gcd(int a, int b);"));
         mvc.perform(get("/api/code/local/file").session(session).param("file", "../main.cpp"))
@@ -248,6 +249,74 @@ class CoachFlowTest {
             request.setRemoteAddr("192.0.2.5");
             return request;
         })).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void assessmentChecksTimeAccountVerdictAndKeepsHistory() throws Exception {
+        MockHttpSession session = register();
+        JsonNode initial = getJson(session, "/api/state");
+        var profile = (com.fasterxml.jackson.databind.node.ObjectNode) initial.path("workspace").path("profile").deepCopy();
+        profile.put("handle", "sample_user");
+        send(session, "PUT", "/api/profile", Map.of("revision", initial.path("revision").asLong(), "profile", profile));
+        long userId = store.accountByName(initial.path("username").asText()).id();
+        Models.SyncInfo synced = new Models.SyncInfo();
+        synced.handle = "sample_user";
+        synced.syncedAt = java.time.Instant.now().toString();
+        synced.fetchStartedAt = java.time.Instant.now().getEpochSecond();
+        store.saveSync(userId, synced.handle, List.of(), synced);
+        JsonNode started = send(session, "POST", "/api/assessment", Map.of()).path("current");
+        assertThat(started.path("problemIds").size()).isEqualTo(3);
+        String base = "/api/assessment/" + started.path("id").asText();
+        mvc.perform(post(base + "/settle").session(session)).andExpect(status().isConflict());
+        var snapshot = store.snapshot(userId);
+        var test = snapshot.workspace().assessment;
+        long end = java.time.Instant.now().getEpochSecond() - 1;
+        test.startedAt = end - 3600;
+        test.deadline = end;
+        store.save(userId, snapshot.revision(), snapshot.workspace());
+        String first = test.problemIds.get(0), second = test.problemIds.get(1), third = test.problemIds.get(2);
+        store.saveSync(userId, synced.handle, List.of(
+                new Models.Submission(1, first, "OK", test.startedAt + 23),
+                new Models.Submission(2, second, "PENDING", test.startedAt + 30),
+                new Models.Submission(3, third, "OK", end)), synced);
+        mvc.perform(post(base + "/settle").session(session)).andExpect(status().isConflict());
+        store.saveSync(userId, synced.handle, List.of(new Models.Submission(2, second, "WRONG_ANSWER", test.startedAt + 30)), synced);
+        JsonNode results = send(session, "POST", base + "/settle", Map.of()).path("current").path("results");
+        assertThat(results.path(0).path("status").asText()).isEqualTo("accepted");
+        assertThat(results.path(0).path("firstAcceptedSeconds").asLong()).isEqualTo(23);
+        assertThat(results.path(1).path("status").asText()).isEqualTo("attempted");
+        assertThat(results.path(2).path("status").asText()).isEqualTo("unsubmitted");
+        assertThat(send(session, "POST", base + "/settle", Map.of()).path("current").path("results")).isEqualTo(results);
+        var planSnapshot = store.snapshot(userId);
+        planSnapshot.workspace().profile.dailyMinutes = List.of(120, 120, 120, 120, 120, 120, 120);
+        store.save(userId, planSnapshot.revision(), planSnapshot.workspace());
+        JsonNode updated = getJson(session, "/api/state");
+        JsonNode plan = send(session, "POST", "/api/plan/generate", Map.of("revision", updated.path("revision").asLong()))
+                .path("workspace").path("plan");
+        assertThat(plan.path("basis").toString()).contains("最近限时短测中");
+        assertThat(plan.path("tasks").toString()).contains("安排一道不同题目复核");
+        JsonNode next = send(session, "POST", "/api/assessment", Map.of());
+        assertThat(next.path("history").size()).isEqualTo(1);
+        assertThat(next.path("current").path("problemIds").toString()).doesNotContain(first, second, third);
+    }
+
+    @Test
+    void savesSelfReportedExperienceAndValidatesCompetitionDate() throws Exception {
+        MockHttpSession session = register();
+        JsonNode initial = getJson(session, "/api/state");
+        var profile = (com.fasterxml.jackson.databind.node.ObjectNode) initial.path("workspace").path("profile").deepCopy();
+        profile.put("achievements", " 校赛团队二等奖 ");
+        profile.put("competitionDate", "2026-02-30");
+        long revision = initial.path("revision").asLong();
+        mvc.perform(put("/api/profile").session(session).contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("revision", revision, "profile", profile))))
+                .andExpect(status().isBadRequest());
+        profile.put("competitionDate", "2026-12-01");
+        JsonNode result = send(session, "PUT", "/api/profile", Map.of("revision", revision, "profile", profile));
+        assertThat(result.path("workspace").path("profile").path("achievements").asText()).isEqualTo("校赛团队二等奖");
+        assertThat(getJson(session, "/api/state").path("workspace").path("profile").path("competitionDate").asText())
+                .isEqualTo("2026-12-01");
+        assertThat(getJson(session, "/api/profile/model").path("samples").asInt()).isZero();
     }
 
     @Test

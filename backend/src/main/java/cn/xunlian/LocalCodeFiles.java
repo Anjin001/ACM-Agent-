@@ -98,7 +98,7 @@ public class LocalCodeFiles {
     public List<Hit> search(long userId, String query, boolean content, int offset) {
         Folder folder = folder(userId);
         String needle = Objects.toString(query, "").strip().toLowerCase(Locale.ROOT);
-        if (needle.length() > 160 || offset < 0 || offset > FILE_LIMIT) throw invalid("搜索条件无效");
+        if (needle.length() > 160 || offset < 0 || (!content && offset > FILE_LIMIT)) throw invalid("搜索条件无效");
         List<Hit> result = new ArrayList<>();
         int matched = 0;
         for (String file : folder.files) {
@@ -112,7 +112,7 @@ public class LocalCodeFiles {
                         if (!lines[index].toLowerCase(Locale.ROOT).contains(needle)) continue;
                         if (matched++ >= offset) result.add(new Hit(file, index + 1,
                                 lines[index].substring(0, Math.min(lines[index].length(), 240))));
-                        break;
+                        if (result.size() == 60) break;
                     }
                 } catch (IOException ignored) { /* Unreadable files are counted during the scan. */ }
             }

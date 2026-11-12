@@ -9,6 +9,8 @@ public final class Models {
     public static class Profile {
         public String name = "新同学";
         public String handle = "";
+        public String competitionDate = "";
+        public String achievements = "";
         public String goal = "巩固算法基础，形成稳定训练节奏";
         public List<String> topics = new ArrayList<>(List.of("二分", "搜索"));
         public int level = 1000;
@@ -78,6 +80,8 @@ public final class Models {
         public int submissionCount;
         public int solvedCount;
         public boolean truncated;
+        public Long coverageStartsAt;
+        public Long fetchStartedAt;
         public Integer rating;
     }
 
@@ -88,6 +92,8 @@ public final class Models {
         public List<Plan> history = new ArrayList<>();
         public Proposal proposal;
         public SyncInfo sync = new SyncInfo();
+        public AssessmentService.Assessment assessment;
+        public List<AssessmentService.Assessment> assessmentHistory = new ArrayList<>();
     }
 
     // ---------------------------------------------------------------- 教练记忆

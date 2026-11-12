@@ -104,6 +104,20 @@ public class CoachStore {
         return db.query("SELECT payload FROM problems", (rs, row) -> decode(rs.getString(1), Problem.class));
     }
 
+    public Set<String> attempted(long userId, String handle) {
+        return new HashSet<>(db.queryForList(
+                "SELECT DISTINCT problem_id FROM cf_submissions WHERE user_id=? AND LOWER(handle)=LOWER(?)",
+                String.class, userId, handle));
+    }
+
+    public List<Submission> submissionsBetween(long userId, String handle, long start, long end) {
+        return db.query("""
+                SELECT submission_id,problem_id,verdict,submitted_at FROM cf_submissions
+                WHERE user_id=? AND LOWER(handle)=LOWER(?) AND submitted_at>=? AND submitted_at<?
+                """, (rs, row) -> new Submission(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getLong(4)),
+                userId, handle, start, end);
+    }
+
     public Set<String> solved(long userId, String handle) {
         return new HashSet<>(db.queryForList("SELECT DISTINCT problem_id FROM cf_submissions WHERE user_id=? AND LOWER(handle)=LOWER(?) AND verdict='OK'", String.class, userId, handle));
     }

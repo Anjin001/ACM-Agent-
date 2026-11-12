@@ -46,6 +46,7 @@ public class CodeforcesClient {
             JsonNode user = request("user.info?handles=" + URLEncoder.encode(handle, StandardCharsets.UTF_8)).path(0);
             Map<Long, Submission> submissions = new LinkedHashMap<>();
             boolean truncated = false;
+            long fetchStartedAt = Instant.now().getEpochSecond();
             // Bound a first sync to 10,000 recent records and report its coverage explicitly.
             for (int page = 0; page < 10; page++) {
                 job.message = "正在读取提交记录，第 " + (page + 1) + " 页";
@@ -62,6 +63,8 @@ public class CodeforcesClient {
             SyncInfo info = new SyncInfo();
             info.handle = handle;
             info.syncedAt = Instant.now().toString();
+            info.fetchStartedAt = fetchStartedAt;
+            info.coverageStartsAt = submissions.values().stream().map(Submission::createdAt).min(Long::compareTo).orElse(null);
             info.submissionCount = submissions.size();
             info.solvedCount = (int) submissions.values().stream().filter(row -> row.verdict().equals("OK")).map(Submission::problemId).distinct().count();
             info.truncated = truncated;
