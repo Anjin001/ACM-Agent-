@@ -17,6 +17,9 @@ export interface Problem {
   difficulty: string
   minutes: number
   provenance: string
+  sourceTags: string[]
+  minLevel: number
+  maxLevel: number
 }
 export interface Task {
   id: string
@@ -54,6 +57,10 @@ export interface Proposal {
 export interface SyncJob {
   status: string
   message: string
+  handle: string
+  mode: string
+  pages: number
+  readCount: number
 }
 export interface Workspace {
   profile: Profile
@@ -68,7 +75,44 @@ export interface Workspace {
     solvedCount: number
     truncated: boolean
     rating: number | null
+    fullHistory: boolean
+    lastFullSyncAt: string | null
+    lastSubmissionId: number
   }
+  learningHints: Record<string, number>
+  assessments: Assessment[]
+  challenges: ChallengeResult[]
+}
+
+export interface AssessmentItem {
+  questionId: string
+  topic: string
+  chosen: number
+  answer: number
+  correct: boolean
+  hintLevel: number
+  explanation: string
+}
+export interface Assessment {
+  id: string
+  route: string
+  correct: number
+  total: number
+  createdAt: string
+  items: AssessmentItem[]
+  suggestedTopics: string[]
+}
+export interface ChallengeResult {
+  id: string
+  challengeId: string
+  numbers: number[]
+  target: number | null
+  buggyOutput: string
+  referenceOutput: string
+  counterexample: boolean
+  correctFix: boolean
+  explanation: string
+  createdAt: string
 }
 export interface AppState {
   revision: number
@@ -79,4 +123,30 @@ export interface AppState {
   solvedIds: string[]
   aiConfigured: boolean
   syncJob: SyncJob
+  topics: Topic[]
+  catalogTotal: number
+  cfSolvedIds: string[]
+}
+
+export interface Topic {
+  name: string
+  category: string
+  summary: string
+  prerequisites: string[]
+  steps: string[]
+  examples: string[]
+}
+export interface ProblemRow {
+  problem: Problem
+  completion: string
+  firstAcceptedAt: number | null
+  lastAcceptedAt: number | null
+  acceptedSubmissions: number
+}
+export interface ProblemPage {
+  items: ProblemRow[]
+  total: number
+  page: number
+  pageSize: number
+  pages: number
 }
