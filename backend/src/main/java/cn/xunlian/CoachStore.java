@@ -68,6 +68,12 @@ public class CoachStore {
             });
         } catch (DuplicateKeyException ex) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "用户名已被使用");
+        } catch (org.springframework.dao.DataAccessException ex) {
+            // SQLite 的唯一约束不一定被翻译成 DuplicateKeyException，这里兜住同一语义。
+            if (String.valueOf(ex.getMessage()).contains("UNIQUE")) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "用户名已被使用");
+            }
+            throw ex;
         }
     }
 
@@ -191,6 +197,7 @@ public class CoachStore {
                 feedback.minutes = i == 0 ? 32 : 55;
                 feedback.outcome = task.status;
                 feedback.note = i == 0 ? "独立完成，注意 upper_bound 的边界。" : "参考题解才理清边界，想再做一道同类题。";
+                feedback.causes = Nlp.causes(feedback.note).stream().map(Nlp.Cause::tag).toList();
                 feedback.createdAt = monday.plusDays(i).atTime(20, 30).atZone(ZoneId.of("Asia/Shanghai")).toInstant().toString();
                 workspace.feedback.add(feedback);
             }

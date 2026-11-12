@@ -2114,6 +2114,64 @@ form label:first-child {
     font-size: 11px;
   }
 }
+.insight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 21px;
+  margin-top: 21px;
+  align-items: start;
+}
+.basis-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.basis-list li {
+  font-size: 10px;
+  color: #6d7c93;
+  line-height: 1.7;
+  padding-left: 10px;
+  border-left: 2px solid #dbe4f6;
+}
+.basis-list li span {
+  display: inline-block;
+  margin-right: 6px;
+  color: #3159d9;
+  font-size: 9px;
+  background: #eef3ff;
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+.proposal-time {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 10px;
+  color: #6382ce;
+  background: #edf3ff;
+  border-radius: 4px;
+  padding: 5px 8px;
+}
+.cause-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.cause-tags span {
+  font-size: 9px;
+  color: #9a7b3f;
+  background: #fff7e8;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+@media (max-width: 1020px) {
+  .insight-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
