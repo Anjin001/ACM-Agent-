@@ -22,6 +22,27 @@ class CoachFlowTest {
     @Autowired CoachStore store;
 
     @Test
+    void diagnosisTracksHintUseAndChallengesVerifyCounterexamples() throws Exception {
+        MockHttpSession session=register();
+        JsonNode catalog=json.readTree(mvc.perform(get("/api/learning").session(session)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        assertThat(catalog.path("questions").size()).isEqualTo(12);
+        assertThat(catalog.path("questions").path(0).has("answer")).isFalse();
+        JsonNode hinted=send(session,"POST","/api/learning/hint",Map.of("revision",0,"questionId","f-complexity"));
+        JsonNode assessed=send(session,"POST","/api/learning/assessment",Map.of("revision",hinted.path("state").path("revision").asLong(),"route","foundation","answers",Map.of("f-loop",1,"f-empty",0,"f-function",2,"f-complexity",1,"f-prefix",0,"f-binary",1)));
+        assertThat(assessed.path("result").path("correct").asInt()).isEqualTo(6);
+        assertThat(assessed.path("result").path("items").path(3).path("hintLevel").asInt()).isEqualTo(1);
+        assertThat(assessed.path("state").path("workspace").path("learningHints").size()).isZero();
+        JsonNode binary=send(session,"POST","/api/learning/challenge",Map.of("revision",assessed.path("state").path("revision").asLong(),"challengeId","binary","numbers",List.of(3),"target",3,"fix",1,"explanation","闭区间需要检查最后的位置"));
+        assertThat(binary.path("result").path("counterexample").asBoolean()).isTrue();
+        assertThat(binary.path("result").path("buggyOutput").asText()).isEqualTo("false");
+        assertThat(binary.path("result").path("referenceOutput").asText()).isEqualTo("true");
+        JsonNode overflow=send(session,"POST","/api/learning/challenge",Map.of("revision",binary.path("state").path("revision").asLong(),"challengeId","overflow","numbers",List.of(1000000000,1000000000,1000000000),"fix",0,"explanation","总和超出32位有符号整数范围"));
+        assertThat(overflow.path("result").path("referenceOutput").asText()).isEqualTo("3000000000");
+        assertThat(overflow.path("result").path("correctFix").asBoolean()).isTrue();
+        assertThat(state(register()).path("workspace").path("challenges").size()).isZero();
+    }
+
+    @Test
     void syncMergesWindowsAndRefreshesRejudgedVerdicts() throws Exception {
         MockHttpSession session = register();
         JsonNode initial = state(session);
