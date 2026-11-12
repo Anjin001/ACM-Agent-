@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>循练 · 代码记忆</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">循</span><div>循练<span>CODE MEMORY</span></div></div>
+    <div class="sidebar-caption">本地训练空间</div>
+    <nav><button class="nav active" data-view="chat">◎　记忆对话</button><button class="nav" data-view="reviews">⌘　代码审查 <span id="review-count">0</span></button><button class="nav" data-view="files">▤　代码沙盒</button><button class="nav" data-view="settings">⚙　连接与设置</button></nav>
+    <div class="sidebar-bottom"><span class="dot"></span> 本机运行 · 127.0.0.1<p>你的代码，成为下一次训练的起点。</p></div>
+  </aside>
+  <main>
+    <header><div><span class="eyebrow">循练 ACM 训练工作台 / 独立工具</span><h1 id="page-title">和你的代码聊一聊</h1></div><button id="scan" class="secondary">↻ 立即扫描</button></header>
+    <section class="workspace-strip"><div><span class="label">当前代码目录</span><strong id="root">尚未选择目录</strong></div><div class="metrics"><span><b id="file-count">0</b> 个文件</span><span><b id="done-count">0</b> 份当前记忆</span><span id="activity">等待配置</span></div></section>
+    <div id="notice" class="notice" role="status" hidden></div>
+    <section id="view-chat" class="view">
+      <div class="chat-layout"><div class="conversation panel"><div id="messages" aria-live="polite"></div><form id="chat-form"><label for="question" class="sr-only">对话内容</label><textarea id="question" rows="3" maxlength="6000" placeholder="问问你写过的算法、容易忽略的边界，或下一步该怎么练习…"></textarea><div class="composer-bottom"><span>根据本地代码与审查记忆回答 · Enter 发送 / Shift+Enter 换行</span><button id="send" class="primary" type="submit">发送 ↑</button></div></form></div><aside class="context panel"><span class="eyebrow">让训练连续发生</span><h2>每一份代码<br>都是一份经验。</h2><p>保存文件后自动发现变化、审查实现，并留下可追溯的代码记忆。</p><div class="step"><b>01</b><div>连接你的模型<small>填写兼容 Chat Completions 的 API</small></div></div><div class="step"><b>02</b><div>选择代码目录<small>只读取指定目录，独立保存快照</small></div></div><div class="step"><b>03</b><div>边写，边积累<small>对话查看依据，回顾实现与问题</small></div></div><button class="text-button" id="open-settings">配置我的训练空间 →</button></aside></div>
+    </section>
+    <section id="view-reviews" class="view" hidden><div class="section-heading"><div><h2>每次修改，都有迹可循</h2><p>模型观察需要结合题意判断。旧版本报告单独标记，失败后可点击“立即扫描”重试。</p></div></div><div id="reviews"></div></section>
+    <section id="view-files" class="view" hidden><div class="section-heading"><div><h2>代码沙盒</h2><p>当前索引中的文件。这里预览的是本地快照；工具不会执行或修改你的源文件。</p></div></div><div class="panel table-wrap"><table><thead><tr><th>文件</th><th>行数</th><th>大小</th><th>索引时间</th><th></th></tr></thead><tbody id="files"></tbody></table></div><p id="scan-detail" class="muted"></p></section>
+    <section id="view-settings" class="view" hidden><form id="settings-form" class="panel settings"><span class="eyebrow">连接与设置</span><h2>建立你的代码训练空间</h2><label>本地代码目录<input id="setting-root" required placeholder="../solutions" autocomplete="off"></label><p class="field-note">支持绝对路径或相对于启动工作目录的路径，建议选择自己的算法练习目录。自动跳过依赖、构建产物、符号链接及常见密钥文件名；代码中的硬编码秘密仍需自行移除。</p><div class="two-columns"><label>API 基础地址<input id="base-url" required type="url" placeholder="https://your-provider.example/v1" autocomplete="off"></label><label>模型名称<input id="model" required placeholder="服务商提供的模型 ID" autocomplete="off"></label></div><label>API Key<input id="api-key" type="password" placeholder="首次填写；留空保留已保存密钥" autocomplete="off"></label><label class="checkbox"><input id="clear-key" type="checkbox">清除已存密钥（用于不需要密钥的本机模型）</label><label class="checkbox"><input id="auto-review" type="checkbox" checked>保存代码后自动审查</label><p class="field-note">每 3 秒检查一次，连续两次内容稳定后审查。相同文件内容复用已有报告；首次保存设置会扫描当前目录。服务需保持运行。</p><div class="privacy-note">启用后，目录中的源码会按需发送到你配置的模型服务，用于自动审查和对话。代码快照、报告、聊天记录保存在本机 <code>data/</code>；API Key 保存在本机配置文件中，请勿共享该目录。</div><div class="actions"><button type="button" id="test-api" class="secondary">测试 API 连接</button><button id="save-settings" class="primary" type="submit">保存并开始扫描 →</button></div></form></section>
+  </main>
+  <dialog id="source-dialog"><div class="dialog-head"><strong id="source-title"></strong><button id="close-source" class="secondary">关闭</button></div><pre id="source-content"></pre></dialog>
+  <script src="/app.js" type="module"></script>
+</body></html>
