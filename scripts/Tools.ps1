@@ -1,15 +1,44 @@
 $ErrorActionPreference = 'Stop'
 
+function Test-JavaHome {
+    param([string]$Path)
+    if (-not $Path) { return $false }
+    if (-not (Test-Path -LiteralPath "$Path/bin/javac.exe")) { return $false }
+    $version = (Get-Item -LiteralPath "$Path/bin/javac.exe").VersionInfo.ProductVersion
+    if ($version -match '^(\d+)') { return ([int]$Matches[1] -ge 17) }
+    return $false
+}
+
 function Find-JavaHome {
-    $candidates = @($env:JAVA_HOME)
-    $jetbrains = Get-ChildItem -Path 'C:/Program Files/JetBrains/*/jbr' -Directory -ErrorAction SilentlyContinue
-    $candidates += @($jetbrains | ForEach-Object { $_.FullName })
-    $candidates += @(Get-ChildItem -Path 'C:/Program Files/Java/*','C:/Program Files/Eclipse Adoptium/*','C:/Program Files/Microsoft/jdk*' -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
-    foreach ($candidate in $candidates) {
-        if ($candidate -and (Test-Path -LiteralPath "$candidate/bin/javac.exe")) {
-            $version = (Get-Item -LiteralPath "$candidate/bin/javac.exe").VersionInfo.ProductVersion
-            if ($version -match '^(\d+)' -and [int]$Matches[1] -ge 17) { return $candidate }
+    $candidates = New-Object System.Collections.Generic.List[string]
+    if ($env:JAVA_HOME) { $candidates.Add($env:JAVA_HOME) }
+    # javac/java already on PATH: resolve back to the JDK root
+    foreach ($name in @('javac.exe', 'java.exe')) {
+        $found = Get-Command $name -ErrorAction SilentlyContinue
+        if ($found -and $found.Source) { $candidates.Add((Split-Path (Split-Path $found.Source -Parent) -Parent)) }
+    }
+    # Registry keys written by most JDK installers
+    foreach ($key in @('HKLM:\SOFTWARE\JavaSoft\JDK', 'HKLM:\SOFTWARE\JavaSoft\Java Development Kit', 'HKLM:\SOFTWARE\Eclipse Adoptium\JDK')) {
+        Get-ChildItem -Path $key -ErrorAction SilentlyContinue | ForEach-Object {
+            $jdkHome = (Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction SilentlyContinue).JavaHome
+            if ($jdkHome) { $candidates.Add($jdkHome) }
         }
+    }
+    # Common install layouts, including JDKs installed outside C:
+    $patterns = @(
+        '*/java/*', '*/Java/*', '*/jdk*', '*/JDK*', '*/dev/*', '*/tools/*',
+        '*/Program Files/Java/*', '*/Program Files/Eclipse Adoptium/*',
+        '*/Program Files/Microsoft/jdk*', '*/Program Files/JetBrains/*/jbr'
+    )
+    foreach ($drive in @('C:', 'D:', 'E:', 'F:')) {
+        if (-not (Test-Path -LiteralPath "$drive/")) { continue }
+        foreach ($pattern in $patterns) {
+            Get-ChildItem -Path "$drive/$pattern" -Directory -ErrorAction SilentlyContinue |
+                ForEach-Object { $candidates.Add($_.FullName) }
+        }
+    }
+    foreach ($candidate in $candidates) {
+        if (Test-JavaHome $candidate) { return (Resolve-Path -LiteralPath $candidate).Path }
     }
     throw 'JDK 17+ is required. Install a JDK or set JAVA_HOME, then retry.'
 }
