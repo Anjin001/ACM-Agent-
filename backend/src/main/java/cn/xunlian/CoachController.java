@@ -21,22 +21,29 @@ public class CoachController {
     private final CoachStore store;
     private final Planner planner;
     private final AiCoach ai;
+    private final LocalAiSettings aiSettings;
     private final CodeforcesClient cf;
     private final CoachMemory memory;
     private final MemoryStore memoryStore;
     private final ProfileModeler modeler;
     private final CodeReviewer reviewer;
+    private final CodeWorkspaceService codeWorkspaces;
+    private final LocalCodeFiles localFiles;
 
     public CoachController(CoachStore store, Planner planner, AiCoach ai, CodeforcesClient cf,
-                           CoachMemory memory, MemoryStore memoryStore, ProfileModeler modeler, CodeReviewer reviewer) {
+                           CoachMemory memory, MemoryStore memoryStore, ProfileModeler modeler, CodeReviewer reviewer,
+                           LocalAiSettings aiSettings, CodeWorkspaceService codeWorkspaces, LocalCodeFiles localFiles) {
         this.store = store;
         this.planner = planner;
         this.ai = ai;
+        this.aiSettings = aiSettings;
         this.cf = cf;
         this.memory = memory;
         this.memoryStore = memoryStore;
         this.modeler = modeler;
         this.reviewer = reviewer;
+        this.codeWorkspaces = codeWorkspaces;
+        this.localFiles = localFiles;
     }
 
     @GetMapping("/health")
@@ -53,9 +60,33 @@ public class CoachController {
         long id = userId(session);
         Account account = store.account(id);
         Snapshot snapshot = store.snapshot(id);
+        LocalAiSettings.Status modelSettings = aiSettings.status(account);
         return Map.of("revision", snapshot.revision(), "workspace", snapshot.workspace(), "username", account.username(), "demo", account.demo(),
-                "problems", store.problems(), "solvedIds", store.excluded(id, snapshot.workspace()), "aiConfigured", ai.configured(),
+                "problems", store.problems(), "solvedIds", store.excluded(id, snapshot.workspace()), "aiConfigured", ai.configured(modelSettings),
+                "aiSettings", modelSettings,
                 "syncJob", cf.status(id));
+    }
+
+    @PutMapping("/settings/ai")
+    public Map<String, Object> saveAiSettings(@RequestBody LocalAiSettings.Update update, HttpServletRequest request) {
+        Account account = localAiAccount(request);
+        aiSettings.save(account, update);
+        return state(request.getSession());
+    }
+
+    @DeleteMapping("/settings/ai")
+    public Map<String, Object> clearAiSettings(HttpServletRequest request) {
+        aiSettings.clear(localAiAccount(request));
+        return state(request.getSession());
+    }
+
+    private Account localAiAccount(HttpServletRequest request) {
+        Account account = store.account(userId(request.getSession()));
+        String address = request.getRemoteAddr();
+        if (account.demo() || !Set.of("127.0.0.1", "::1", "0:0:0:0:0:0:0:1").contains(address)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "请从本机登录个人账号后使用此功能");
+        }
+        return account;
     }
 
     @PostMapping("/auth/demo")
@@ -162,7 +193,7 @@ public class CoachController {
         proposal.reason = proposal.plan.explanation;
         proposal.basis = new ArrayList<>(proposal.plan.basis);
         ProfileModel model = modeler.build(workspace, store.problems());
-        ai.refine(proposal, workspace, planner.candidates(id, workspace), body.instruction(), statements, model);
+        ai.refine(store.account(id), proposal, workspace, planner.candidates(id, workspace), body.instruction(), statements, model);
         if (proposal.basis == null || proposal.basis.isEmpty()) proposal.basis = new ArrayList<>(statements.stream().limit(2).toList());
         workspace.proposal = proposal;
         store.save(id, snapshot.revision(), workspace);
@@ -268,6 +299,87 @@ public class CoachController {
     }
 
     // ---------------------------------------------------------------- 代码审查
+
+    @PostMapping("/code/local")
+    public LocalCodeFiles.FolderInfo openLocalCode(@RequestBody LocalCodeFiles.OpenFolder body, HttpServletRequest request) {
+        return localFiles.open(localAiAccount(request).id(), body.path());
+    }
+
+    @GetMapping("/code/local")
+    public Map<String, Object> currentLocalCode(HttpServletRequest request) {
+        return Collections.singletonMap("folder", localFiles.current(localAiAccount(request).id()));
+    }
+
+    @GetMapping("/code/local/search")
+    public List<LocalCodeFiles.Hit> searchLocalCode(@RequestParam(defaultValue = "") String q,
+            @RequestParam(defaultValue = "false") boolean content, @RequestParam(defaultValue = "0") int offset,
+            HttpServletRequest request) {
+        return localFiles.search(localAiAccount(request).id(), q, content, offset);
+    }
+
+    @GetMapping("/code/local/file")
+    public LocalCodeFiles.Source viewLocalCode(@RequestParam String file, @RequestParam(defaultValue = "1") int line,
+            HttpServletRequest request) {
+        return localFiles.view(localAiAccount(request).id(), file, line);
+    }
+
+    @PostMapping("/code/local/scan")
+    public LocalCodeFiles.JobState scanLocalCode(@RequestParam(defaultValue = "false") boolean useModel,
+            HttpServletRequest request) {
+        return localFiles.start(localAiAccount(request), useModel);
+    }
+
+    @GetMapping("/code/local/scan")
+    public LocalCodeFiles.JobState localCodeScanStatus(HttpServletRequest request) {
+        return localFiles.status(localAiAccount(request).id());
+    }
+
+    @GetMapping("/code/workspace")
+    public Map<String, Object> codeWorkspace(HttpSession session) {
+        return Collections.singletonMap("report", codeWorkspaces.current(codeWorkspaceAccount(session).id()));
+    }
+
+    @PostMapping("/code/workspace")
+    public CodeWorkspaceService.Report analyzeWorkspace(@RequestBody CodeWorkspaceService.Analyze body, HttpSession session) {
+        return codeWorkspaces.analyze(codeWorkspaceAccount(session), body);
+    }
+
+    @PostMapping("/code/workspace/scans")
+    public CodeWorkspaceService.ScanProgress startCodeScan(@RequestBody CodeWorkspaceService.StartScan body, HttpSession session) {
+        return codeWorkspaces.startFolderScan(codeWorkspaceAccount(session).id(), body);
+    }
+
+    @PostMapping("/code/workspace/scans/{id}/batches")
+    public CodeWorkspaceService.ScanProgress scanCodeBatch(@PathVariable String id, @RequestBody CodeWorkspaceService.ScanBatch body, HttpSession session) {
+        return codeWorkspaces.scanBatch(codeWorkspaceAccount(session).id(), id, body);
+    }
+
+    @PostMapping("/code/workspace/scans/{id}/finish")
+    public CodeWorkspaceService.Report finishCodeScan(@PathVariable String id, HttpSession session) {
+        return codeWorkspaces.finishFolderScan(codeWorkspaceAccount(session), id);
+    }
+
+    @DeleteMapping("/code/workspace/scans/{id}")
+    public void cancelCodeScan(@PathVariable String id, HttpSession session) {
+        codeWorkspaces.cancelFolderScan(codeWorkspaceAccount(session).id(), id);
+    }
+
+    @PostMapping("/code/workspace/chat")
+    public CodeWorkspaceService.Report chatAboutWorkspace(@RequestBody CodeWorkspaceService.Ask body, HttpSession session) {
+        return codeWorkspaces.ask(codeWorkspaceAccount(session), body);
+    }
+
+    @DeleteMapping("/code/workspace/{id}")
+    public Map<String, Object> clearCodeWorkspace(@PathVariable String id, @RequestParam long revision, HttpSession session) {
+        codeWorkspaces.clear(codeWorkspaceAccount(session).id(), id, revision);
+        return Collections.singletonMap("report", null);
+    }
+
+    private Account codeWorkspaceAccount(HttpSession session) {
+        Account account = store.account(userId(session));
+        if (account.demo()) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "请登录个人账号后使用代码工作区");
+        return account;
+    }
 
     @PostMapping("/code/review")
     public CodeReview review(@RequestBody CodeReviewRequest body, HttpSession session) {

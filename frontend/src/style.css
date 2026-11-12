@@ -1342,6 +1342,13 @@ td:first-child {
   padding: 25px;
   margin-bottom: 22px;
 }
+.ai-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .form-panel h2 {
   font-size: 14px;
   margin-bottom: 23px;

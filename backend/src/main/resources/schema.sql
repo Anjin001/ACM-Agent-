@@ -65,3 +65,11 @@ CREATE TABLE IF NOT EXISTS code_reviews (
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_reviews_user ON code_reviews(user_id, created_at);
+
+CREATE TABLE IF NOT EXISTS code_workspaces (
+    user_id BIGINT PRIMARY KEY,
+    id VARCHAR(40) NOT NULL,
+    revision BIGINT NOT NULL,
+    payload TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES accounts(id)
+);

@@ -82,6 +82,7 @@ export interface AppState {
   problems: Problem[]
   solvedIds: string[]
   aiConfigured: boolean
+  aiSettings: { baseUrl: string; model: string; hasLocalKey: boolean; unreadable: boolean }
   syncJob: SyncJob
 }
 

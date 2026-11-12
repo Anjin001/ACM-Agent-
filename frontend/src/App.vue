@@ -34,7 +34,7 @@ import {
 import TaskList from './components/TaskList.vue'
 import CapabilityProfile from './components/CapabilityProfile.vue'
 import MemoryPanel from './components/MemoryPanel.vue'
-import CodeReview from './components/CodeReview.vue'
+import CodeWorkspace from './components/CodeWorkspace.vue'
 import { api, ApiError } from './api'
 import type {
   AppState,
@@ -85,6 +85,8 @@ const instruction = ref('针对最近参考题解才完成的题，再安排一�
 const authMode = ref<'login' | 'register'>('register')
 const credentials = ref({ username: '', password: '' })
 const draft = ref<Profile | null>(null)
+const aiDraft = ref({ baseUrl: '', model: '', apiKey: '' })
+watch(() => state.value?.username, resetAiDraft)
 const selectedDay = ref(-1)
 const query = ref('')
 const platform = ref('all')
@@ -368,6 +370,26 @@ function saveProfile() {
       }),
     )
     notify('个人设置已保存，可重新生成计划')
+  })
+}
+function resetAiDraft() {
+  const saved = state.value?.aiSettings
+  aiDraft.value = { baseUrl: saved?.baseUrl ?? '', model: saved?.model ?? '', apiKey: '' }
+}
+function saveAiSettings() {
+  act('ai-save', async () => {
+    const payload = { ...aiDraft.value }
+    aiDraft.value.apiKey = ''
+    adopt(await api<AppState>('/settings/ai', 'PUT', payload), false)
+    resetAiDraft()
+    notify('模型配置已保存在本机')
+  })
+}
+function clearAiSettings() {
+  act('ai-clear', async () => {
+    adopt(await api<AppState>('/settings/ai', 'DELETE'), false)
+    resetAiDraft()
+    notify('已清除本机保存的模型配置')
   })
 }
 function toggleTopic(name: string) {
@@ -1108,12 +1130,9 @@ onUnmounted(() => {
         </template>
 
         <template v-if="page === 'code'">
-          <CodeReview
-            :tasks="tasks"
-            :problem-map="problemMap"
-            @notify="notify"
-            @refresh="loadMemory"
-          />
+          <CodeWorkspace v-if="!state.demo" :key="state.username" :ai-configured="state.aiConfigured"
+            @notify="notify" @refresh="loadMemory" />
+          <p v-else class="notice">登录个人账号后可选择本地目录，使用私人代码工作区和教练对话。</p>
         </template>
 
         <template v-if="page === 'settings' && draft">
@@ -1234,9 +1253,43 @@ onUnmounted(() => {
                   {{
                     state.aiConfigured
                       ? '模型生成后，会检查题目来源与时间预算。调用失败时使用规则方案。'
-                      : '当前按专题、难度、可用时间与反馈安排任务。模型服务需由项目维护者在后端配置。'
+                      : '当前按专题、难度、可用时间与反馈安排任务。'
                   }}
                 </p>
+                <p v-if="state.demo" class="panel-note">登录个人账号后可配置模型服务。</p>
+                <template v-else>
+                  <label>
+                    服务地址
+                    <input v-model.trim="aiDraft.baseUrl" maxlength="500"
+                      placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false"
+                      @keydown.enter.prevent="saveAiSettings" />
+                  </label>
+                  <label>
+                    模型名称
+                    <input v-model.trim="aiDraft.model" maxlength="160"
+                      placeholder="填写服务商提供的模型 ID" autocomplete="off" spellcheck="false"
+                      @keydown.enter.prevent="saveAiSettings" />
+                  </label>
+                  <label>
+                    API Key
+                    <input v-model.trim="aiDraft.apiKey" type="password" maxlength="1024"
+                      :placeholder="state.aiSettings.hasLocalKey ? '已保存，留空保留原 Key' : '输入 API Key'"
+                      autocomplete="new-password" spellcheck="false" @keydown.enter.prevent="saveAiSettings" />
+                  </label>
+                  <p v-if="state.aiSettings.unreadable" class="panel-note">本机配置无法读取，请重新填写或清除。</p>
+                  <p class="panel-note">
+                    Key 按账号加密保存在本机，保存后无法在页面查看。生成模型方案时，Key 用于向你填写的服务认证，调整计划会发送相关训练上下文，代码审查只发送你勾选的片段。
+                  </p>
+                  <div class="ai-settings-actions">
+                    <button class="button primary" type="button" :disabled="!!busy" @click="saveAiSettings">
+                      {{ busy === 'ai-save' ? '正在保存' : '保存模型配置' }}
+                    </button>
+                    <button v-if="state.aiSettings.hasLocalKey || state.aiSettings.unreadable" class="button outline"
+                      type="button" :disabled="!!busy" @click="clearAiSettings">
+                      清除本机配置
+                    </button>
+                  </div>
+                </template>
               </section>
               <div class="source-note">
                 <Library :size="17" />

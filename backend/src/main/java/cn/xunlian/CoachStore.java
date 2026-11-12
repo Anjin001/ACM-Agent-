@@ -163,7 +163,7 @@ public class CoachStore {
         catch (Exception ex) { throw new IllegalStateException("无法保存数据", ex); }
     }
 
-    private <T> T decode(String payload, Class<T> type) {
+    <T> T decode(String payload, Class<T> type) {
         try { return json.readValue(payload, type); }
         catch (Exception ex) { throw new IllegalStateException("无法读取数据", ex); }
     }

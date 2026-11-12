@@ -58,10 +58,7 @@ public class CodeReviewer {
         files.forEach(file -> review.files.add(new ReviewedFile(file.name, countLines(file.content), file.content.length())));
 
         review.findings.addAll(rules(files));
-        review.engine = "rules";
-        if (ai.configured()) {
-            review.engine = ai.reviewCode(review, problem, files) ? "model" : "rules";
-        }
+        review.engine = ai.reviewCode(store.account(userId), review, problem, files) ? "model" : "rules";
         count(review);
         review.summary = summarize(review);
 
@@ -88,7 +85,7 @@ public class CodeReviewer {
 
     // ------------------------------------------------------------ 规则检查
 
-    private List<Finding> rules(List<SourceFile> files) {
+    List<Finding> rules(List<SourceFile> files) {
         List<Finding> findings = new ArrayList<>();
         for (SourceFile file : files) {
             String[] lines = file.content.split("\n", -1);

@@ -85,6 +85,19 @@ public class MemoryStore {
                 .findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "记忆写入失败"));
     }
 
+    public void saveFolderSignal(long userId, String kind, String statement, String detail, String reportId) {
+        String now = Instant.now().toString();
+        int updated = db.update("""
+                UPDATE observations SET detail=?,source_id=?,updated_at=?
+                WHERE user_id=? AND kind=? AND statement=? AND source_type='code_folder'
+                """, detail, reportId, now, userId, kind, statement);
+        if (updated == 0 && Boolean.FALSE.equals(db.queryForObject(
+                "SELECT COUNT(*) > 0 FROM observations WHERE user_id=? AND kind=? AND statement=?",
+                Boolean.class, userId, kind, statement))) {
+            upsert(userId, kind, statement, detail, "code_folder", reportId, 0.75);
+        }
+    }
+
     public Observation correct(long userId, String id, String statement, Boolean active) {
         Observation current = list(userId, false).stream()
                 .filter(item -> item.id.equals(id)).findFirst()

@@ -26,9 +26,10 @@ function Find-JavaHome {
     }
     # Common install layouts, including JDKs installed outside C:
     $patterns = @(
-        '*/java/*', '*/Java/*', '*/jdk*', '*/JDK*', '*/dev/*', '*/tools/*',
-        '*/Program Files/Java/*', '*/Program Files/Eclipse Adoptium/*',
-        '*/Program Files/Microsoft/jdk*', '*/Program Files/JetBrains/*/jbr'
+        'java/*', 'jdk*', 'dev/*', 'tools/*',
+        'Program Files/Java/*', 'Program Files/Eclipse Adoptium/*',
+        'Program Files/Microsoft/jdk*', 'Program Files/JetBrains/*/jbr',
+        '*/java/*', '*/jdk*', '*/dev/*', '*/tools/*'
     )
     foreach ($drive in @('C:', 'D:', 'E:', 'F:')) {
         if (-not (Test-Path -LiteralPath "$drive/")) { continue }

@@ -2,6 +2,10 @@ package cn.xunlian;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.HttpServer;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -24,14 +28,227 @@ class CoachFlowTest {
     static final String DB_URL = "jdbc:sqlite:" + Path.of("target", "test-" + UUID.randomUUID() + ".db").toAbsolutePath()
             + "?journal_mode=WAL&busy_timeout=5000";
 
+    private static final Path AI_SETTINGS = Path.of("target", "ai-settings-test-" + UUID.randomUUID());
+
     @DynamicPropertySource
     static void sqlite(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", () -> DB_URL);
+        registry.add("xunlian.ai-settings-directory", () -> AI_SETTINGS.toString());
     }
 
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
     @Autowired CoachStore store;
+
+    @Test
+    void localModelSettingsArePrivateAndUsedByBothAiFlows() throws Exception {
+        MockHttpSession owner = register();
+        MockHttpSession other = register();
+        String key = "test-private-model-key";
+        String route = "/api/settings/ai";
+        HttpServer provider = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        provider.createContext("/v1/chat/completions", exchange -> {
+            try (exchange) {
+                String raw = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                JsonNode request = json.readTree(raw);
+                if (!("Bearer " + key).equals(exchange.getRequestHeaders().getFirst("Authorization"))
+                        || raw.contains(key) || !"personal-model".equals(request.path("model").asText())) {
+                    exchange.sendResponseHeaders(401, -1);
+                    return;
+                }
+                JsonNode context = json.readTree(request.path("messages").path(1).path("content").asText());
+                Object answer;
+                if (context.has("filesScanned")) {
+                    if (raw.contains("raw_only_marker")) {
+                        exchange.sendResponseHeaders(400, -1);
+                        return;
+                    }
+                    answer = Map.of("summary", "整个目录的统计已汇总", "level", "实现覆盖待验证");
+                } else if (context.has("samples")) {
+                    answer = Map.of("summary", "看到了二分实现", "level", "有实现经验，独立性待确认",
+                            "gaps", List.of("下一步验证边界"), "nextQuestion", "这是你独立写的吗？",
+                            "evidence", List.of(
+                                    Map.of("topic", "二分", "file", "week1/main.cpp", "line", 1, "observation", "二分样例"),
+                                    Map.of("topic", "伪造", "file", "../foreign.cpp", "line", 1, "observation", "应丢弃")));
+                } else if (context.has("userMessage")) {
+                    answer = Map.of("answer", "下一步做一道陌生二分变式。");
+                } else if (context.has("files")) {
+                    answer = Map.of("issues", List.of(Map.of("file", "main.cpp", "line", 1,
+                            "kind", "实现", "message", "本地测试模型的审查结果")));
+                } else {
+                    JsonNode task = context.path("baselinePlan").path("tasks").path(0);
+                    answer = Map.of("reason", "本地测试模型的计划", "tasks", List.of(Map.of(
+                            "problemId", task.path("problemId").asText(), "day", task.path("day").asInt(),
+                            "minutes", task.path("minutes").asInt())));
+                }
+                byte[] reply = json.writeValueAsBytes(Map.of("choices", List.of(Map.of("message",
+                        Map.of("content", json.writeValueAsString(answer))))));
+                exchange.sendResponseHeaders(200, reply.length);
+                exchange.getResponseBody().write(reply);
+            }
+        });
+        provider.start();
+        try {
+            String baseUrl = "http://127.0.0.1:" + provider.getAddress().getPort() + "/v1";
+            Map<String, String> settings = Map.of("baseUrl", baseUrl, "model", "personal-model", "apiKey", key);
+            mvc.perform(put(route).session(owner).with(request -> {
+                        request.setRemoteAddr("192.0.2.1");
+                        return request;
+                    }).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(settings)))
+                    .andExpect(status().isForbidden());
+
+            JsonNode saved = send(owner, "PUT", route, settings);
+            assertThat(saved.path("aiConfigured").asBoolean()).isTrue();
+            assertThat(saved.path("aiSettings").path("hasLocalKey").asBoolean()).isTrue();
+            assertThat(saved.toString()).doesNotContain(key);
+            assertThat(getJson(other, "/api/state").path("aiSettings").path("hasLocalKey").asBoolean()).isFalse();
+            try (var files = Files.list(AI_SETTINGS)) {
+                for (Path file : files.toList()) {
+                    assertThat(new String(Files.readAllBytes(file), StandardCharsets.ISO_8859_1)).doesNotContain(key);
+                }
+            }
+
+            JsonNode plan = seedPlan(owner);
+            JsonNode proposal = send(owner, "POST", "/api/plan/proposal",
+                    Map.of("revision", plan.path("revision").asLong(), "instruction", "每天90分钟"));
+            assertThat(proposal.path("workspace").path("proposal").path("engine").asText()).isEqualTo("model");
+            JsonNode review = send(owner, "POST", "/api/code/review",
+                    Map.of("files", List.of(Map.of("name", "main.cpp", "content", "int main() {}"))));
+            assertThat(review.path("engine").asText()).isEqualTo("model");
+            assertThat(review.path("findings").toString()).contains("本地测试模型的审查结果");
+
+            String workspaceRoute = "/api/code/workspace";
+            String source = "int main() { return std::lower_bound(a, a+n, x)-a; }";
+            mvc.perform(post(workspaceRoute).session(owner).contentType(MediaType.APPLICATION_JSON)
+                    .content(json.writeValueAsString(Map.of("folder", "practice", "files",
+                            List.of(Map.of("name", "../outside.cpp", "content", source))))))
+                    .andExpect(status().isBadRequest());
+            JsonNode workspace = send(owner, "POST", workspaceRoute, Map.of("folder", "practice", "useModel", true,
+                    "files", List.of(Map.of("name", "week1/main.cpp", "content", source))));
+            assertThat(workspace.path("engine").asText()).isEqualTo("model");
+            assertThat(workspace.path("evidence").toString()).contains("week1/main.cpp").doesNotContain("foreign.cpp");
+            assertThat(workspace.toString()).doesNotContain(source);
+            assertThat(getJson(other, workspaceRoute).path("report").isNull()).isTrue();
+
+            Map<String, Object> message = Map.of("workspaceId", workspace.path("id").asText(),
+                    "revision", workspace.path("revision").asLong(), "question", "第一周的代码是我独立写的",
+                    "useModel", true, "remember", true);
+            JsonNode chatted = send(owner, "POST", workspaceRoute + "/chat", message);
+            assertThat(chatted.path("messages").path(1).path("engine").asText()).isEqualTo("model");
+            assertThat(getJson(owner, workspaceRoute).path("report").path("messages").size()).isEqualTo(2);
+            assertThat(getJson(owner, "/api/memory").toString()).contains("第一周的代码是我独立写的");
+            mvc.perform(post(workspaceRoute + "/chat").session(owner).contentType(MediaType.APPLICATION_JSON)
+                    .content(json.writeValueAsString(message))).andExpect(status().isConflict());
+            mvc.perform(delete(workspaceRoute + "/" + chatted.path("id").asText())
+                    .param("revision", chatted.path("revision").asText()).session(owner)).andExpect(status().isOk());
+            assertThat(getJson(owner, workspaceRoute).path("report").isNull()).isTrue();
+
+            String scanRoot = workspaceRoute + "/scans";
+            JsonNode scan = send(owner, "POST", scanRoot, Map.of("folder", "model-folder", "fileCount", 1, "useModel", true));
+            String scanRoute = scanRoot + "/" + scan.path("id").asText();
+            send(owner, "POST", scanRoute + "/batches", Map.of("index", 0, "segments", List.of(
+                    new CodeWorkspaceService.Segment("main.cpp", "int raw_only_marker = gcd(a,b);", 1, true, false))));
+            JsonNode fullReport = json.readTree(mvc.perform(post(scanRoute + "/finish").session(owner))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+            assertThat(fullReport.path("engine").asText()).isEqualTo("model");
+            assertThat(fullReport.path("summary").asText()).contains("整个目录的统计已汇总");
+
+            mvc.perform(delete(route).session(other)).andExpect(status().isOk());
+            assertThat(getJson(owner, "/api/state").path("aiSettings").path("hasLocalKey").asBoolean()).isTrue();
+            mvc.perform(delete(route).session(owner)).andExpect(status().isOk());
+            assertThat(getJson(owner, "/api/state").path("aiSettings").path("hasLocalKey").asBoolean()).isFalse();
+        } finally {
+            provider.stop(0);
+        }
+    }
+
+    @Test
+    void scansMoreThanAThousandFilesAndRemembersEvidenceFromTheEnd() throws Exception {
+        MockHttpSession session = register();
+        String root = "/api/code/workspace/scans";
+        int total = 1202;
+        JsonNode scan = send(session, "POST", root, Map.of("folder", "practice", "fileCount", total));
+        String route = root + "/" + scan.path("id").asText();
+        mvc.perform(post(route + "/finish").session(session)).andExpect(status().isConflict());
+        for (int offset = 0, batch = 0; offset < 1200; offset += 60, batch++) {
+            List<CodeWorkspaceService.Segment> files = new ArrayList<>();
+            for (int number = offset; number < offset + 60; number++) {
+                String source = number == 1199 ? "int mid=(l+r)/2;" : "int main() {}";
+                files.add(new CodeWorkspaceService.Segment("week/problem" + number + ".cpp", source, 1, true, false));
+            }
+            Map<String, Object> body = Map.of("index", batch, "segments", files);
+            JsonNode progress = send(session, "POST", route + "/batches", body);
+            assertThat(progress.path("filesProcessed").asInt()).isEqualTo(offset + 60);
+            if (batch == 0) {
+                assertThat(send(session, "POST", route + "/batches", body).path("filesProcessed").asInt()).isEqualTo(60);
+            }
+        }
+        String prefix = "// long file\n".repeat(1000);
+        List<CodeWorkspaceService.Segment> tail = List.of(
+                new CodeWorkspaceService.Segment("week/tail.cpp", prefix, 1, false, false),
+                new CodeWorkspaceService.Segment("week/tail.cpp", "int mid=(l+r)/2;\nint x = gcd(a,b);", 1001, true, false),
+                new CodeWorkspaceService.Segment("empty.cpp", "", 1, true, true));
+        assertThat(send(session, "POST", route + "/batches", Map.of("index", 20, "segments", tail))
+                .path("filesProcessed").asInt()).isEqualTo(total);
+        JsonNode report = json.readTree(mvc.perform(post(route + "/finish").session(session))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        assertThat(report.path("scannedFiles").asInt()).isEqualTo(1201);
+        assertThat(report.path("skippedFiles").asInt()).isEqualTo(1);
+        assertThat(report.path("files").size()).isEqualTo(1201);
+        assertThat(report.path("recurringIssues").path(0).path("files").asInt()).isEqualTo(2);
+        assertThat(report.path("evidence").toString()).contains("week/tail.cpp").contains("1002");
+        JsonNode savedMemory = getJson(session, "/api/memory");
+        assertThat(savedMemory.path("observations").toString())
+                .contains("code_folder", "观察到专题：数学", "多文件出现待复核问题：边界", "week/tail.cpp:1002");
+
+        String observationId = "";
+        for (JsonNode item : savedMemory.path("observations")) {
+            if (item.path("statement").asText().contains("观察到专题：数学")) observationId = item.path("id").asText();
+        }
+        assertThat(observationId).isNotBlank();
+        mvc.perform(patch("/api/memory/" + observationId).session(session).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"active\":false}")).andExpect(status().isOk());
+        JsonNode rescanned = send(session, "POST", root, Map.of("folder", "practice", "fileCount", 1));
+        String rescanRoute = root + "/" + rescanned.path("id").asText();
+        send(session, "POST", rescanRoute + "/batches", Map.of("index", 0, "segments", List.of(
+                new CodeWorkspaceService.Segment("week/recheck.cpp", "int x = gcd(a,b);", 1, true, false))));
+        mvc.perform(post(rescanRoute + "/finish").session(session)).andExpect(status().isOk());
+        JsonNode after = getJson(session, "/api/memory").path("observations");
+        int matches = 0;
+        for (JsonNode item : after) {
+            if (!item.path("statement").asText().contains("观察到专题：数学")) continue;
+            matches++;
+            assertThat(item.path("active").asBoolean()).isFalse();
+            assertThat(item.path("detail").asText()).contains("week/recheck.cpp:1");
+        }
+        assertThat(matches).isEqualTo(1);
+    }
+
+    @Test
+    void browsesOnlyTheOpenedLocalFolder(@org.junit.jupiter.api.io.TempDir Path root) throws Exception {
+        MockHttpSession session = register();
+        MockHttpSession other = register();
+        Files.createDirectories(root.resolve("solutions"));
+        Files.writeString(root.resolve("solutions/main.cpp"), "// local\nint gcd(int a, int b);");
+        Files.createDirectories(root.resolve("build"));
+        Files.writeString(root.resolve("build/ignored.cpp"), "int ignored;");
+        JsonNode opened = send(session, "POST", "/api/code/local", Map.of("path", root.toString()));
+        assertThat(opened.path("files").asInt()).isEqualTo(1);
+        JsonNode hit = json.readTree(mvc.perform(get("/api/code/local/search").session(session)
+                .param("q", "gcd").param("content", "true")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(hit.path(0).path("file").asText()).isEqualTo("solutions/main.cpp");
+        assertThat(hit.path(0).path("line").asInt()).isEqualTo(2);
+        mvc.perform(get("/api/code/local/file").session(session).param("file", "solutions/main.cpp").param("line", "2"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.lines[0]").value("int gcd(int a, int b);"));
+        mvc.perform(get("/api/code/local/file").session(session).param("file", "../main.cpp"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/code/local/file").session(other).param("file", "solutions/main.cpp"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/code/local/search").session(session).with(request -> {
+            request.setRemoteAddr("192.0.2.5");
+            return request;
+        })).andExpect(status().isForbidden());
+    }
 
     @Test
     void syncMergesWindowsAndRefreshesRejudgedVerdicts() throws Exception {

@@ -94,7 +94,7 @@ function strength(weight: number) {
           </template>
           <p v-else class="mem-statement">{{ item.statement }}</p>
           <div class="mem-meta">
-            <span class="mem-source">{{ item.sourceType === 'manual' ? '手动补充' : item.sourceType === 'feedback' ? '来自复盘' : item.sourceType === 'review' ? '来自代码审查' : '来自设置' }}</span>
+            <span class="mem-source">{{ item.sourceType === 'manual' ? '手动补充' : item.sourceType === 'feedback' ? '来自复盘' : item.sourceType === 'review' ? '来自代码审查' : item.sourceType === 'code_folder' ? '来自整目录扫描' : item.sourceType === 'code_workspace' ? '来自代码教练对话' : '来自设置' }}</span>
             <span v-if="item.detail" class="mem-detail">{{ item.detail }}</span>
             <span class="mem-weight">{{ strength(item.weight) }}</span>
           </div>
