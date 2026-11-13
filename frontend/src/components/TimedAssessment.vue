@@ -65,8 +65,16 @@ onUnmounted(() => clearInterval(timer))
         <template v-if="result.firstAcceptedSeconds !== null"> · 首次通过 {{ duration(result.firstAcceptedSeconds) }}</template>
       </p>
     </div>
-    <button v-if="state && canStart" class="button primary" :disabled="busy"
-      @click="update('/assessment', 'POST')">开始短测</button>
+    <template v-if="state && canStart">
+      <p v-if="current?.cancelled">本场已放弃。</p>
+      <div class="assessment-actions">
+        <button class="button outline" :disabled="busy || syncJob.status === 'running'" @click="emit('sync')">
+          {{ syncJob.status === 'running' ? '正在同步' : '同步 CF 提交' }}
+        </button>
+        <button class="button primary" :disabled="busy || syncJob.status === 'running'"
+          @click="update('/assessment', 'POST')">开始短测</button>
+      </div>
+    </template>
     <button v-else-if="current && seconds > 0" class="button outline" :disabled="busy"
       @click="update('/assessment/' + current.id + '/end', 'POST')">提前结束</button>
     <template v-else-if="current">
@@ -94,6 +102,7 @@ onUnmounted(() => clearInterval(timer))
 .assessment-title p { color: #68788e; margin-top: 5px; }
 .assessment ol { margin: 0; padding-left: 22px; }
 .assessment a { color: #3159d9; }
+.assessment-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .assessment .button { justify-self: start; }
 .assessment [role="alert"] { color: #a34b2f; }
 </style>
