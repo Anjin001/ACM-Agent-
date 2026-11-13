@@ -43,6 +43,17 @@ public class ProfileModeler {
                 .thenComparingInt(item -> -item.samples));
 
         model.buckets = buckets(feedback, byId);
+        List<AssessmentService.Assessment> assessments = new ArrayList<>();
+        if (workspace.assessment != null) assessments.add(workspace.assessment);
+        assessments.addAll(workspace.assessmentHistory);
+        assessments.stream().filter(test -> !test.results.isEmpty()).limit(3).forEach(test -> {
+            for (var result : test.results) {
+                Problem problem = byId.get(result.problemId());
+                model.timedEvidence.add(new TimedEvidence(result.problemId(),
+                        problem == null ? result.problemId() : problem.title, result.status(),
+                        result.submissions(), result.firstAcceptedSeconds(), test.endedAt == null ? test.deadline : test.endedAt));
+            }
+        });
 
         for (TopicStat topic : model.topics) {
             if (topic.samples < 2) continue;

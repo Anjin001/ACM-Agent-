@@ -159,7 +159,11 @@ public final class Models {
         public double rate;
     }
 
+    public record TimedEvidence(String problemId, String title, String status, int submissions,
+                                Long firstAcceptedSeconds, long assessedAt) {}
+
     public static class ProfileModel {
+        public List<TimedEvidence> timedEvidence = new ArrayList<>();
         public List<TopicStat> topics = new ArrayList<>();
         public List<BucketStat> buckets = new ArrayList<>();
         public int samples;

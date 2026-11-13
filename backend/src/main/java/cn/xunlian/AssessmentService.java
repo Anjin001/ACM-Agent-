@@ -28,6 +28,7 @@ public class AssessmentService {
         public long startedAt;
         public long deadline;
         public Long endedAt;
+        public boolean cancelled;
         public List<String> problemIds = new ArrayList<>();
         public List<Result> results = new ArrayList<>();
     }
@@ -44,7 +45,7 @@ public class AssessmentService {
     public State start(long userId) {
         Snapshot snapshot = store.snapshot(userId);
         Workspace workspace = snapshot.workspace();
-        if (workspace.assessment != null && workspace.assessment.results.isEmpty()) {
+        if (workspace.assessment != null && workspace.assessment.results.isEmpty() && !workspace.assessment.cancelled) {
             throw conflict("请先结算当前短测");
         }
         if (workspace.profile.handle.isBlank() || !workspace.profile.handle.equalsIgnoreCase(workspace.sync.handle)
@@ -86,10 +87,24 @@ public class AssessmentService {
     }
 
     @Transactional
+    public State cancel(long userId, String id) {
+        Snapshot snapshot = store.snapshot(userId);
+        Workspace workspace = snapshot.workspace();
+        Assessment assessment = require(workspace, id);
+        if (!assessment.cancelled && assessment.results.isEmpty()) {
+            assessment.cancelled = true;
+            if (assessment.endedAt == null) assessment.endedAt = Math.min(now(), assessment.deadline);
+            store.save(userId, snapshot.revision(), workspace);
+        }
+        return new State(assessment, workspace.assessmentHistory, now());
+    }
+
+    @Transactional
     public State settle(long userId, String id) {
         Snapshot snapshot = store.snapshot(userId);
         Workspace workspace = snapshot.workspace();
         Assessment assessment = require(workspace, id);
+        if (assessment.cancelled) throw conflict("这场短测已放弃");
         if (!assessment.results.isEmpty()) return new State(assessment, workspace.assessmentHistory, now());
         long end = assessment.endedAt == null ? assessment.deadline : assessment.endedAt;
         if (now() < end) throw conflict("请先结束短测");

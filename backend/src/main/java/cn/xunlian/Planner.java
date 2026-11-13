@@ -51,7 +51,7 @@ public class Planner {
         Map<String, Problem> catalog = new HashMap<>();
         store.problems().forEach(problem -> catalog.put(problem.id, problem));
         var assessment = workspace.assessment != null && !workspace.assessment.results.isEmpty()
-                ? workspace.assessment : workspace.assessmentHistory.stream().findFirst().orElse(null);
+                ? workspace.assessment : workspace.assessmentHistory.stream().filter(test -> !test.results.isEmpty()).findFirst().orElse(null);
         String assessmentFocus = assessment == null ? "" : assessment.results.stream()
                 .filter(result -> "attempted".equals(result.status()))
                 .map(result -> catalog.get(result.problemId())).filter(Objects::nonNull)

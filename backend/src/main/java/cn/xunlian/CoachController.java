@@ -329,6 +329,11 @@ public class CoachController {
         return assessments.end(codeWorkspaceAccount(session).id(), id);
     }
 
+    @PostMapping("/assessment/{id}/cancel")
+    public AssessmentService.State cancelAssessment(@PathVariable String id, HttpSession session) {
+        return assessments.cancel(codeWorkspaceAccount(session).id(), id);
+    }
+
     @PostMapping("/assessment/{id}/settle")
     public AssessmentService.State settleAssessment(@PathVariable String id, HttpSession session) {
         return assessments.settle(codeWorkspaceAccount(session).id(), id);

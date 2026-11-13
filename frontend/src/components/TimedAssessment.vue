@@ -6,7 +6,7 @@ import type { Problem, SyncJob } from '../types'
 defineProps<{ problems: Record<string, Problem>; syncJob: SyncJob }>()
 const emit = defineEmits<{ sync: [] }>()
 type Result = { problemId: string; status: string; submissions: number; firstAcceptedSeconds: number | null }
-type Assessment = { id: string; handle: string; startedAt: number; deadline: number; endedAt: number | null; problemIds: string[]; results: Result[] }
+type Assessment = { id: string; handle: string; startedAt: number; deadline: number; endedAt: number | null; cancelled: boolean; problemIds: string[]; results: Result[] }
 type State = { current: Assessment | null; history: Assessment[]; serverTime: number }
 
 const state = ref<State | null>(null)
@@ -16,6 +16,7 @@ const time = ref(Date.now())
 let serverOffset = 0
 let timer: ReturnType<typeof setInterval>
 const current = computed(() => state.value?.current)
+const canStart = computed(() => !current.value || current.value.cancelled || !!current.value.results.length)
 const seconds = computed(() => current.value && !current.value.endedAt
   ? Math.max(0, current.value.deadline - Math.floor(time.value / 1000 + serverOffset)) : 0)
 const labels: Record<string, string> = { accepted: '已通过', unsubmitted: '未提交', attempted: '已提交，未通过' }
@@ -64,7 +65,7 @@ onUnmounted(() => clearInterval(timer))
         <template v-if="result.firstAcceptedSeconds !== null"> · 首次通过 {{ duration(result.firstAcceptedSeconds) }}</template>
       </p>
     </div>
-    <button v-if="state && (!current || current.results.length)" class="button primary" :disabled="busy"
+    <button v-if="state && canStart" class="button primary" :disabled="busy"
       @click="update('/assessment', 'POST')">开始短测</button>
     <button v-else-if="current && seconds > 0" class="button outline" :disabled="busy"
       @click="update('/assessment/' + current.id + '/end', 'POST')">提前结束</button>
@@ -76,10 +77,12 @@ onUnmounted(() => clearInterval(timer))
       <button class="button primary" :disabled="busy || syncJob.status === 'running'"
         @click="update('/assessment/' + current.id + '/settle', 'POST')">结算短测</button>
     </template>
+    <button v-if="current && !canStart" class="button outline" :disabled="busy"
+      @click="update('/assessment/' + current.id + '/cancel', 'POST')">放弃本场</button>
     <details v-if="state?.history.length">
       <summary>历次短测</summary>
       <p v-for="test in state.history" :key="test.id">
-        {{ new Date(test.startedAt * 1000).toLocaleDateString() }} · {{ test.results.filter(r => r.status === 'accepted').length }}/3 道通过
+        {{ new Date(test.startedAt * 1000).toLocaleDateString() }} · {{ test.cancelled ? '已放弃' : test.results.filter(r => r.status === 'accepted').length + '/3 道通过' }}
       </p>
     </details>
   </section>

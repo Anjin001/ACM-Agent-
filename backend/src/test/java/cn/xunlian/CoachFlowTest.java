@@ -286,6 +286,9 @@ class CoachFlowTest {
         assertThat(results.path(0).path("firstAcceptedSeconds").asLong()).isEqualTo(23);
         assertThat(results.path(1).path("status").asText()).isEqualTo("attempted");
         assertThat(results.path(2).path("status").asText()).isEqualTo("unsubmitted");
+        JsonNode model = getJson(session, "/api/profile/model");
+        assertThat(model.path("timedEvidence").size()).isEqualTo(3);
+        assertThat(model.path("samples").asInt()).isZero();
         assertThat(send(session, "POST", base + "/settle", Map.of()).path("current").path("results")).isEqualTo(results);
         var planSnapshot = store.snapshot(userId);
         planSnapshot.workspace().profile.dailyMinutes = List.of(120, 120, 120, 120, 120, 120, 120);
@@ -297,6 +300,10 @@ class CoachFlowTest {
         assertThat(plan.path("tasks").toString()).contains("安排一道不同题目复核");
         JsonNode next = send(session, "POST", "/api/assessment", Map.of());
         assertThat(next.path("history").size()).isEqualTo(1);
+        String nextId = next.path("current").path("id").asText();
+        String nextRoute = "/api/assessment/" + nextId;
+        assertThat(send(session, "POST", nextRoute + "/cancel", Map.of()).path("current").path("cancelled").asBoolean()).isTrue();
+        mvc.perform(post(nextRoute + "/settle").session(session)).andExpect(status().isConflict());
         assertThat(next.path("current").path("problemIds").toString()).doesNotContain(first, second, third);
     }
 

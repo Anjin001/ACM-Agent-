@@ -75,6 +75,18 @@ function biasText(bias: number) {
         </div>
       </div>
 
+      <details v-if="model.timedEvidence.length">
+        <summary>近期短测证据</summary>
+        <ul>
+          <li v-for="item in model.timedEvidence" :key="item.problemId + ':' + item.assessedAt">
+            {{ new Date(item.assessedAt * 1000).toLocaleDateString() }} · {{ item.title }}
+            · {{ item.status === 'accepted' ? '通过' : item.status === 'attempted' ? '尝试未通过' : '未提交' }}
+            · {{ item.submissions }} 次提交
+            <template v-if="item.firstAcceptedSeconds !== null"> · {{ item.firstAcceptedSeconds }} 秒通过</template>
+          </li>
+        </ul>
+      </details>
+
       <div v-if="model.buckets.length" class="cap-buckets">
         <span class="cap-bucket-label">难度分布</span>
         <span v-for="bucket in model.buckets" :key="bucket.label" class="cap-bucket">

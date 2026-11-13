@@ -149,6 +149,7 @@ export interface BucketStat {
 }
 
 export interface ProfileModel {
+  timedEvidence: { problemId: string; title: string; status: string; submissions: number; firstAcceptedSeconds: number | null; assessedAt: number }[]
   topics: TopicStat[]
   buckets: BucketStat[]
   samples: number
