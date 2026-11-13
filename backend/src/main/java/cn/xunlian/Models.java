@@ -14,6 +14,7 @@ public final class Models {
         public String goal = "巩固算法基础，形成稳定训练节奏";
         public List<String> topics = new ArrayList<>(List.of("二分", "搜索"));
         public int level = 1000;
+        public boolean manualLevel;
         public List<Integer> dailyMinutes = new ArrayList<>(List.of(45, 60, 45, 60, 60, 90, 0));
     }
 
@@ -25,6 +26,7 @@ public final class Models {
         public String url;
         public List<String> tags = new ArrayList<>();
         public Integer rating;
+        public boolean historicalOnly;
         public String difficulty;
         public int minutes = 40;
         public String provenance = "人工精选";

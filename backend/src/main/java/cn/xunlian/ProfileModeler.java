@@ -40,7 +40,7 @@ public class ProfileModeler {
                     samples++;
                     if ("independent".equals(latest.outcome)) {
                         independent++;
-                        difficultySum += problem.rating == null ? 0 : clamp((problem.rating - 800) / 800.0);
+                        difficultySum += problem.rating == null ? 0 : difficultyContribution(problem.rating);
                     }
                 }
                 if ("CF".equals(problem.platform) && attempted.contains(problem.id)) {
@@ -147,7 +147,7 @@ public class ProfileModeler {
         stat.avgRating = rating.isPresent() ? (int) Math.round(rating.getAsDouble()) : null;
 
         if (!rows.isEmpty()) {
-            double difficulty = stat.avgRating == null ? 0.45 : clamp((stat.avgRating - 900) / 800.0);
+            double difficulty = stat.avgRating == null ? 0.45 : difficultyContribution(stat.avgRating);
             // 样本少时压低等级，避免只做对一道题就显示高等级。
             double confidence = Math.min(1.0, 0.4 + 0.2 * stat.samples);
             double score = (0.65 * stat.independentRate + 0.35 * difficulty) * confidence;
@@ -223,7 +223,9 @@ public class ProfileModeler {
         return Math.round(value * 100) + "%";
     }
 
-    private double clamp(double value) {
-        return Math.max(0, Math.min(1, value));
+    private double difficultyContribution(int rating) {
+        double scaled = Math.max(0, rating) / 1600.0;
+        return scaled / (1 + scaled);
     }
+
 }

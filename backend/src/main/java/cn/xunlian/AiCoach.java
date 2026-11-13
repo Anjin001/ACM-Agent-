@@ -65,6 +65,8 @@ public class AiCoach {
             pool.forEach(problem -> byId.put(problem.id, problem));
             Map<String, Object> context = new LinkedHashMap<>();
             context.put("profile", workspace.profile);
+            context.put("codeforces", store.codeforcesEvidence(account.id(), workspace));
+            context.put("effectiveTrainingLevel", Planner.trainingLevel(workspace));
             context.put("profileSummary", profile == null ? "" : profile.summary);
             context.put("weaknesses", profile == null ? List.of() : profile.weaknesses);
             context.put("memory", memory);

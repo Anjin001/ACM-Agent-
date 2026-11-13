@@ -6,6 +6,7 @@ export interface Profile {
   goal: string
   topics: string[]
   level: number
+  manualLevel: boolean
   dailyMinutes: number[]
 }
 export interface Problem {

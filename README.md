@@ -69,7 +69,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start.ps1
 ## 数据与技术结构
 
 - 前端使用 Vue 3、TypeScript、Vite 与 Lucide 图标。六个页面覆盖概览、周计划、题库、复盘、代码审查与设置。
-- 首版面向基础训练，支持 800～1600 的 CF 难度起点，结合人工精选题安排练习。
+- 训练起点可手动设置，默认跟随已同步的 CF Rating；题库覆盖不足时会提示。
 - 后端使用 Spring Boot 3.5.7、Java 17 API、JdbcTemplate。默认使用 SQLite 单文件库（`data/xunlian.db`），另附 MySQL 结构。
 - `accounts` 保存账号，`problems` 保存题目，`cf_submissions` 保存提交记录。`workspaces` 将偏好、计划、反馈与版本作为 JSON 聚合保存，使用 revision 乐观锁防止并发覆盖。
 - `observations` 保存教练记忆（目标、易错点、代码问题、优势、约束），`training_events` 保存计划生成、复盘、调整、审查等事件，`code_reviews` 保存审查结论。

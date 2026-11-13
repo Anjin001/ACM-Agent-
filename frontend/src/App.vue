@@ -56,7 +56,7 @@ const navigation = [
   { id: 'library' as Page, label: '精选题库', icon: Library },
   { id: 'ability' as Page, label: '能力评估', icon: ChartNoAxesColumnIncreasing },
   { id: 'review' as Page, label: '训练复盘', icon: NotebookPen },
-  { id: 'code' as Page, label: '代码审查', icon: Code2 },
+  { id: 'code' as Page, label: '教练工作台', icon: Code2 },
 ]
 const topics = [
   '二分',
@@ -114,6 +114,13 @@ const memoryData = ref<{ observations: Observation[]; events: MemoryEvent[] }>({
 const memoryBusy = ref('')
 const memoryLoaded = ref(false)
 const workspace = computed(() => state.value?.workspace)
+const trainingLevel = computed(() => {
+  const current = workspace.value
+  if (!current) return null
+  return !current.profile.manualLevel && current.profile.handle &&
+    current.profile.handle.toLowerCase() === current.sync.handle?.toLowerCase()
+    ? current.sync.rating ?? current.profile.level : current.profile.level
+})
 const plan = computed(() => workspace.value?.plan)
 const tasks = computed(() => plan.value?.tasks || [])
 const completed = computed(() =>
@@ -741,7 +748,7 @@ onUnmounted(() => {
               <span class="metric-icon orange"><Target :size="20" /></span
               ><span
                 ><small>当前训练起点</small
-                ><strong>{{ workspace!.profile.level }}<em> CF 难度参考</em></strong></span
+                ><strong>{{ trainingLevel }}<em> CF 难度参考</em></strong></span
               >
             </div>
             <div>
@@ -1205,14 +1212,11 @@ onUnmounted(() => {
                   /></label
                 ><label
                   >训练起点 <span class="field-hint">CF 难度参考</span
-                  ><select v-model.number="draft.level">
-                    <option
-                      v-for="level in [800, 1000, 1200, 1400, 1600]"
-                      :key="level"
-                      :value="level"
-                    >
-                      {{ level }}
-                    </option>
+                  ><input v-model.number="draft.level" type="number" min="1" step="1" required :disabled="!draft.manualLevel" />
+                    <span v-if="!draft.manualLevel">当前参考 {{ trainingLevel }}</span></label
+                ><label>难度来源<select v-model="draft.manualLevel">
+                    <option :value="false">跟随已同步的 CF Rating</option>
+                    <option :value="true">手动设置</option>
                   </select></label
                 >
                 <div class="field-label">想练习的专题</div>

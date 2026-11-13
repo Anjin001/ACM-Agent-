@@ -51,7 +51,7 @@ const rated = computed(() => areas.value.filter(area => area.level !== null).len
       <p v-if="model.codeforcesCoverageTruncated" class="ability-hint">CF 同步范围有限，较早提交可能未计入。</p>
       <details class="ability-method">
         <summary>等级怎么算？</summary>
-        <p>每道题采用最新一次站内复盘。独立完成比例占 70%，独立完成题的 CF 难度贡献占 30%。难度按 800～1600 归一化，无难度数据的题仍计入独立完成比例。CF 公开提交与短测判题作为可核对的旁证。</p>
+        <p>每道题采用最新一次站内复盘。独立完成比例占 70%，独立完成题的 CF 难度贡献占 30%。难度贡献随 CF 题目难度递增，无难度数据的题仍计入独立完成比例。CF 公开提交与短测判题作为可核对的旁证。</p>
       </details>
       <button v-if="rated < areas.length" class="button outline" type="button" @click="$emit('openPlan')">去周计划训练</button>
     </section>

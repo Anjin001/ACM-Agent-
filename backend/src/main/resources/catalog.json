@@ -1827,5 +1827,294 @@
     "difficulty": "专项练习",
     "minutes": 75,
     "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "CF-2218-G",
+    "platform": "CF",
+    "code": "2218G",
+    "title": "The 67th Iteration of \"Counting is Fun\"",
+    "url": "https://codeforces.com/problemset/problem/2218/G",
+    "tags": [
+      "模拟",
+      "数学"
+    ],
+    "rating": 1800,
+    "difficulty": "1800",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2217-E",
+    "platform": "CF",
+    "code": "2217E",
+    "title": "Definitely Larger",
+    "url": "https://codeforces.com/problemset/problem/2217/E",
+    "tags": [
+      "二分",
+      "数据结构",
+      "图论",
+      "贪心"
+    ],
+    "rating": 2000,
+    "difficulty": "2000",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2217-D",
+    "platform": "CF",
+    "code": "2217D",
+    "title": "Flip the Bit (Hard Version)",
+    "url": "https://codeforces.com/problemset/problem/2217/D",
+    "tags": [
+      "贪心",
+      "模拟",
+      "数学"
+    ],
+    "rating": 1900,
+    "difficulty": "1900",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2215-B",
+    "platform": "CF",
+    "code": "2215B",
+    "title": "RReeppeettiittiioonn",
+    "url": "https://codeforces.com/problemset/problem/2215/B",
+    "tags": [
+      "二分",
+      "模拟",
+      "数学"
+    ],
+    "rating": 2000,
+    "difficulty": "2000",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2210-D",
+    "platform": "CF",
+    "code": "2210D",
+    "title": "A Simple RBS Problem",
+    "url": "https://codeforces.com/problemset/problem/2210/D",
+    "tags": [
+      "数学",
+      "字符串"
+    ],
+    "rating": 2100,
+    "difficulty": "2100",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2210-C2",
+    "platform": "CF",
+    "code": "2210C2",
+    "title": "A Simple GCD Problem (Hard Version)",
+    "url": "https://codeforces.com/problemset/problem/2210/C2",
+    "tags": [
+      "动态规划",
+      "贪心",
+      "数学"
+    ],
+    "rating": 2100,
+    "difficulty": "2100",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2208-D1",
+    "platform": "CF",
+    "code": "2208D1",
+    "title": "Tree Orientation (Easy Version)",
+    "url": "https://codeforces.com/problemset/problem/2208/D1",
+    "tags": [
+      "搜索",
+      "图论",
+      "数据结构",
+      "贪心"
+    ],
+    "rating": 1800,
+    "difficulty": "1800",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2205-E",
+    "platform": "CF",
+    "code": "2205E",
+    "title": "Simons and Dividing the Rhythm",
+    "url": "https://codeforces.com/problemset/problem/2205/E",
+    "tags": [
+      "动态规划",
+      "数据结构",
+      "数学",
+      "字符串"
+    ],
+    "rating": 2100,
+    "difficulty": "2100",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2201-C",
+    "platform": "CF",
+    "code": "2201C",
+    "title": "Rigged Bracket Sequence",
+    "url": "https://codeforces.com/problemset/problem/2201/C",
+    "tags": [
+      "动态规划",
+      "数学",
+      "贪心"
+    ],
+    "rating": 2000,
+    "difficulty": "2000",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2195-F",
+    "platform": "CF",
+    "code": "2195F",
+    "title": "Parabola Independence",
+    "url": "https://codeforces.com/problemset/problem/2195/F",
+    "tags": [
+      "动态规划",
+      "图论",
+      "贪心",
+      "数学"
+    ],
+    "rating": 1800,
+    "difficulty": "1800",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2194-E",
+    "platform": "CF",
+    "code": "2194E",
+    "title": "The Turtle Strikes Back",
+    "url": "https://codeforces.com/problemset/problem/2194/E",
+    "tags": [
+      "动态规划",
+      "图论",
+      "模拟"
+    ],
+    "rating": 2000,
+    "difficulty": "2000",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2192-E",
+    "platform": "CF",
+    "code": "2192E",
+    "title": "Swap to Rearrange",
+    "url": "https://codeforces.com/problemset/problem/2192/E",
+    "tags": [
+      "图论",
+      "搜索",
+      "贪心",
+      "字符串"
+    ],
+    "rating": 2100,
+    "difficulty": "2100",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2192-D",
+    "platform": "CF",
+    "code": "2192D",
+    "title": "Cost of Tree",
+    "url": "https://codeforces.com/problemset/problem/2192/D",
+    "tags": [
+      "动态规划",
+      "贪心"
+    ],
+    "rating": 1800,
+    "difficulty": "1800",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2190-B2",
+    "platform": "CF",
+    "code": "2190B2",
+    "title": "Sub-RBS (Hard Version)",
+    "url": "https://codeforces.com/problemset/problem/2190/B2",
+    "tags": [
+      "动态规划",
+      "模拟",
+      "字符串"
+    ],
+    "rating": 1900,
+    "difficulty": "1900",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2184-G",
+    "platform": "CF",
+    "code": "2184G",
+    "title": "Nastiness of Segments",
+    "url": "https://codeforces.com/problemset/problem/2184/G",
+    "tags": [
+      "二分",
+      "数据结构"
+    ],
+    "rating": 1900,
+    "difficulty": "1900",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2184-F",
+    "platform": "CF",
+    "code": "2184F",
+    "title": "Cherry Tree",
+    "url": "https://codeforces.com/problemset/problem/2184/F",
+    "tags": [
+      "搜索",
+      "动态规划",
+      "图论"
+    ],
+    "rating": 1900,
+    "difficulty": "1900",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2182-E",
+    "platform": "CF",
+    "code": "2182E",
+    "title": "New Year's Gifts",
+    "url": "https://codeforces.com/problemset/problem/2182/E",
+    "tags": [
+      "二分",
+      "数据结构",
+      "贪心",
+      "双指针"
+    ],
+    "rating": 1800,
+    "difficulty": "1800",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
+  },
+  {
+    "id": "CF-2181-D",
+    "platform": "CF",
+    "code": "2181D",
+    "title": "Doorway",
+    "url": "https://codeforces.com/problemset/problem/2181/D",
+    "tags": [
+      "二分",
+      "数据结构"
+    ],
+    "rating": 2000,
+    "difficulty": "2000",
+    "minutes": 55,
+    "provenance": "Codeforces 公开题库，进阶训练补录"
   }
 ]

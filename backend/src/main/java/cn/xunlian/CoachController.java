@@ -65,7 +65,7 @@ public class CoachController {
         Snapshot snapshot = store.snapshot(id);
         LocalAiSettings.Status modelSettings = aiSettings.status(account);
         return Map.of("revision", snapshot.revision(), "workspace", snapshot.workspace(), "username", account.username(), "demo", account.demo(),
-                "problems", store.problems(), "solvedIds", store.excluded(id, snapshot.workspace()), "aiConfigured", ai.configured(modelSettings),
+                "problems", store.problems().stream().filter(problem -> !problem.historicalOnly).toList(), "solvedIds", store.excluded(id, snapshot.workspace()), "aiConfigured", ai.configured(modelSettings),
                 "aiSettings", modelSettings,
                 "syncJob", cf.status(id));
     }
@@ -129,7 +129,7 @@ public class CoachController {
         if (profile.handle == null || !profile.handle.matches("[A-Za-z0-9_.-]{0,24}")) bad("请填写有效的 CF handle");
         if (profile.goal == null || profile.goal.length() > 300) bad("训练目标最多 300 个字符");
         if (profile.topics == null || profile.topics.isEmpty() || profile.topics.size() > TOPICS.size() || !TOPICS.containsAll(profile.topics)) bad("请至少选择一个有效训练专题");
-        if (profile.level < 800 || profile.level > 1600) bad("首版训练起点需在 800～1600 之间");
+        if (profile.level < 1) bad("训练起点须为正整数");
         if (profile.dailyMinutes == null || profile.dailyMinutes.size() != 7 || profile.dailyMinutes.stream().anyMatch(minutes -> minutes == null || minutes < 0 || minutes > 480)) bad("每天可用时间需在 0～480 分钟之间");
         long id = userId(session);
         Snapshot snapshot = checked(id, body.revision());
@@ -443,8 +443,14 @@ public class CoachController {
     }
 
     @PostMapping("/code/workspace/chat")
-    public CodeWorkspaceService.Report chatAboutWorkspace(@RequestBody CodeWorkspaceService.Ask body, HttpSession session) {
-        return codeWorkspaces.ask(codeWorkspaceAccount(session), body);
+    public CodeWorkspaceService.Report chatAboutWorkspace(@RequestBody CodeWorkspaceService.Ask body, HttpServletRequest request) {
+        Account account = codeWorkspaceAccount(request.getSession());
+        LocalCodeFiles.Source source = body.useModel() && body.sourceFile() != null
+                ? localFiles.view(localAiAccount(request).id(), body.sourceFile(), Objects.requireNonNullElse(body.sourceLine(), 1))
+                : null;
+        if (source != null) source = new LocalCodeFiles.Source(source.file(), source.firstLine(),
+                source.lines().stream().limit(40).map(line -> line.substring(0, Math.min(300, line.length()))).toList(), true);
+        return codeWorkspaces.ask(account, body, source);
     }
 
     @DeleteMapping("/code/workspace/{id}")

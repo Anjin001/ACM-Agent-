@@ -21,7 +21,7 @@ interface WorkspaceReport {
   recurringIssues: { name: string; files: number }[]
   evidence: { topic: string; file: string; line: number; observation: string }[]
   gaps: string[]
-  messages: { role: string; text: string; engine: string; remembered: boolean }[]
+  messages: { role: string; text: string; engine: string; remembered: boolean; evidenceUsed?: string[] }[]
 }
 
 interface Folder { path: string; files: number }
@@ -41,7 +41,8 @@ let mounted = true
 const report = ref<WorkspaceReport | null>(null)
 const busy = ref('')
 const question = ref('')
-const useModel = ref(false)
+const useModel = ref(true)
+const attachSource = ref(false)
 const remember = ref(false)
 const engineName: Record<string, string> = { model: '模型分析', rules: '本地规则', fallback: '模型未返回可用结果，已使用本地规则' }
 
@@ -71,6 +72,7 @@ function openFolder() {
     folder.value = await api<Folder>('/code/local', 'POST', { path: path.value.trim() })
     path.value = folder.value.path
     source.value = null
+    attachSource.value = false
     query.value = ''
     job.value = null
     await loadHits(0)
@@ -109,7 +111,6 @@ async function followScan() {
 function analyze() {
   void run('analyze', async () => {
     if (!folder.value) return
-    if (report.value && !window.confirm('重新扫描会替换当前报告和对话。继续？')) return
     job.value = await api<Job>('/code/local/scan?useModel=' + (props.aiConfigured && useModel.value), 'POST')
     await followScan()
   })
@@ -117,17 +118,23 @@ function analyze() {
 
 function ask() {
   void run('chat', async () => {
-    if (!report.value || !question.value.trim()) return
+    if (!question.value.trim()) return
     const note = question.value.trim()
     if (remember.value && note.length > 300) throw new Error('加入教练记忆的自述最多 300 字')
     report.value = await api<WorkspaceReport>('/code/workspace/chat', 'POST', {
-      workspaceId: report.value.id,
-      revision: report.value.revision,
+      workspaceId: report.value?.id,
+      revision: report.value?.revision ?? 0,
+      sourceFile: attachSource.value ? source.value?.file : undefined,
+      sourceLine: attachSource.value ? source.value?.firstLine : undefined,
       question: note,
       useModel: props.aiConfigured && useModel.value,
       remember: remember.value,
     })
     question.value = ''
+    attachSource.value = false
+    await nextTick()
+    const messages = document.querySelector('.workspace-messages')
+    if (messages) messages.scrollTop = messages.scrollHeight
     if (remember.value) emit('refresh')
     remember.value = false
   })
@@ -161,10 +168,70 @@ onMounted(() => run('load', async () => {
   <section class="panel workspace">
     <div class="workspace-header">
       <div>
-        <h2>代码工作区</h2>
-        <p>选择刷题目录，查看写过的专题、实现证据和下一步练习。</p>
+        <h2>ACM 教练</h2>
+        <p>询问 CF 表现、近期训练和下一步。也可以添加本地目录，补充代码证据。</p>
       </div>
     </div>
+    <details v-if="report?.folder" class="workspace-report">
+      <summary>目录分析报告 · {{ report.folder }}</summary>
+      <div class="workspace-header">
+        <div>
+          <h3>{{ report.folder }} · 分析报告</h3>
+          <p>{{ engineName[report.engine] }} · {{ report.scannedFiles || report.files.length }} 个文件
+            <template v-if="report.skippedFiles"> · 跳过 {{ report.skippedFiles }} 个</template>
+          </p>
+        </div>
+        <button class="button outline" type="button" :disabled="!!busy" @click="clear">清除报告</button>
+      </div>
+      <p>{{ report.summary }}</p>
+      <div v-if="report.topics?.length" class="workspace-topics">
+        <span v-for="topic in report.topics" :key="topic.name">{{ topic.name }} · {{ topic.files }} 个文件</span>
+      </div>
+      <div class="workspace-assessment">
+        <div>
+          <h4>当前水平线索</h4>
+          <p>{{ report.level }}</p>
+        </div>
+        <div>
+          <h4>查漏补缺</h4>
+          <ul><li v-for="(gap, index) in report.gaps" :key="index">{{ gap }}</li></ul>
+        </div>
+      </div>
+      <details v-if="report.evidence.length" open>
+        <summary>源码证据（{{ report.evidence.length }}）</summary>
+        <ul class="workspace-evidence">
+          <li v-for="(item, index) in report.evidence" :key="index">
+            <strong>{{ item.topic }}</strong>
+            <button v-if="folder" type="button" class="workspace-link" :disabled="!!busy"
+              title="在当前打开的目录查看对应位置" @click="view(item.file, item.line)">
+              <code>{{ item.file }}:{{ item.line }}</code>
+            </button>
+            <code v-else>{{ item.file }}:{{ item.line }}</code>
+            <p>{{ item.observation }}</p>
+          </li>
+        </ul>
+      </details>
+
+    </details>
+
+      <div class="workspace-chat">
+        <p v-if="report?.nextQuestion">{{ report.nextQuestion }}</p>
+        <p v-if="!report?.messages.length">试试问：根据我的 CF Rating 和最近的提交，我该从多少分开始练？</p>
+        <ol v-if="report?.messages.length" class="workspace-messages" aria-live="polite">
+          <li v-for="(message, index) in report.messages" :key="index" :class="message.role">
+            <strong>{{ message.role === 'user' ? '你' : '教练' }}</strong>
+            <small v-if="message.remembered"> · 已加入记忆</small>
+            <small v-else-if="message.engine && message.engine !== 'model'"> · {{ engineName[message.engine] }}</small>
+            <details v-if="message.evidenceUsed?.length">
+              <summary>分析记录 · {{ message.evidenceUsed.length }} 项</summary>
+              <ul><li v-for="item in message.evidenceUsed" :key="item">{{ item }}</li></ul>
+            </details>
+            <p>{{ message.text }}</p>
+          </li>
+        </ol>
+        <p v-if="busy === 'chat'" role="status">正在查阅 CF、训练记录、教练记忆与可用的代码证据…</p>
+    <details class="workspace-tools">
+      <summary>{{ folder ? folder.path : '本地目录与源码' }}</summary>
     <form class="workspace-actions" @submit.prevent="openFolder">
       <input v-model="path" class="workspace-path" aria-label="本机目录路径" placeholder="例如 D:\\ACM\\solutions" />
       <button class="button outline" type="submit" :disabled="!!busy || !path.trim()">
@@ -218,60 +285,14 @@ onMounted(() => run('load', async () => {
     </div>
     <p class="workspace-hint">扫描在本机后台运行。启用 AI 时，模型服务接收统计、代表证据和教练对话。</p>
 
-    <div v-if="report" class="workspace-report">
-      <div class="workspace-header">
-        <div>
-          <h3>{{ report.folder }} · 分析报告</h3>
-          <p>{{ engineName[report.engine] }} · {{ report.scannedFiles || report.files.length }} 个文件
-            <template v-if="report.skippedFiles"> · 跳过 {{ report.skippedFiles }} 个</template>
-          </p>
-        </div>
-        <button class="button outline" type="button" :disabled="!!busy" @click="clear">清除报告</button>
-      </div>
-      <p>{{ report.summary }}</p>
-      <div v-if="report.topics?.length" class="workspace-topics">
-        <span v-for="topic in report.topics" :key="topic.name">{{ topic.name }} · {{ topic.files }} 个文件</span>
-      </div>
-      <div class="workspace-assessment">
-        <div>
-          <h4>当前水平线索</h4>
-          <p>{{ report.level }}</p>
-        </div>
-        <div>
-          <h4>查漏补缺</h4>
-          <ul><li v-for="(gap, index) in report.gaps" :key="index">{{ gap }}</li></ul>
-        </div>
-      </div>
-      <details v-if="report.evidence.length" open>
-        <summary>源码证据（{{ report.evidence.length }}）</summary>
-        <ul class="workspace-evidence">
-          <li v-for="(item, index) in report.evidence" :key="index">
-            <strong>{{ item.topic }}</strong>
-            <button v-if="folder" type="button" class="workspace-link" :disabled="!!busy"
-              title="在当前打开的目录查看对应位置" @click="view(item.file, item.line)">
-              <code>{{ item.file }}:{{ item.line }}</code>
-            </button>
-            <code v-else>{{ item.file }}:{{ item.line }}</code>
-            <p>{{ item.observation }}</p>
-          </li>
-        </ul>
-      </details>
+    </details>
 
-      <div class="workspace-chat">
-        <h3>和教练继续聊</h3>
-        <p>{{ report.nextQuestion }}</p>
-        <ol v-if="report.messages.length" class="workspace-messages" aria-live="polite">
-          <li v-for="(message, index) in report.messages" :key="index" :class="message.role">
-            <strong>{{ message.role === 'user' ? '你' : '教练' }}</strong>
-            <small v-if="message.remembered"> · 已加入记忆</small>
-            <small v-else-if="message.engine && message.engine !== 'model'"> · {{ engineName[message.engine] }}</small>
-            <p>{{ message.text }}</p>
-          </li>
-        </ol>
         <form class="workspace-compose" @submit.prevent="ask">
           <textarea v-model="question" rows="2" maxlength="1000" aria-label="回复教练"
             placeholder="补充哪些代码是你写的，或问下一步该练什么" />
           <div class="workspace-actions">
+            <button v-if="!report?.folder && report?.messages.length" class="button outline" type="button" :disabled="!!busy" @click="clear">清除对话</button>
+            <label v-if="source && aiConfigured"><input v-model="attachSource" type="checkbox" />附上当前预览的源码片段</label>
             <label><input v-model="remember" type="checkbox" :disabled="!!busy" />把这条自述加入教练记忆</label>
             <button class="button primary" :disabled="!!busy || !question.trim()" type="submit">
               <Send :size="15" />{{ busy === 'chat' ? '教练正在回复' : '发送' }}
@@ -279,7 +300,6 @@ onMounted(() => run('load', async () => {
           </div>
         </form>
       </div>
-    </div>
   </section>
 </template>
 
@@ -314,6 +334,9 @@ onMounted(() => run('load', async () => {
 .workspace-evidence li { border-bottom: 1px solid #edf0f6; padding: 6px 0; }
 .workspace-evidence code { color: #53688c; font-size: 12px; }
 .workspace-chat { display: grid; gap: 10px; }
+.workspace-tools { background: #f6f8fc; border: 1px solid #e8eef7; border-radius: 8px; padding: 10px; }
+.workspace-tools > summary { overflow-wrap: anywhere; }
+.workspace-tools[open] > summary { margin-bottom: 10px; }
 .workspace-messages { max-height: 360px; overflow: auto; }
 .workspace-messages li { background: #f5f7fc; padding: 8px 12px; border-radius: 8px; }
 .workspace-messages li.user { background: #eef3ff; }

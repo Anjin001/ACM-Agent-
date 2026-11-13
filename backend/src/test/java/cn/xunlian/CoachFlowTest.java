@@ -110,6 +110,13 @@ class CoachFlowTest {
                 }
             }
 
+            JsonNode firstChat = send(owner, "POST", "/api/code/workspace/chat",
+                    Map.of("revision", 0, "question", "What evidence is available?", "useModel", true));
+            assertThat(firstChat.path("folder").asText()).isEmpty();
+            assertThat(firstChat.path("messages").path(1).path("engine").asText()).isEqualTo("model");
+            assertThat(firstChat.path("messages").path(1).path("evidenceUsed").size()).isGreaterThanOrEqualTo(4);
+            mvc.perform(delete("/api/code/workspace/" + firstChat.path("id").asText())
+                    .param("revision", firstChat.path("revision").asText()).session(owner)).andExpect(status().isOk());
             JsonNode connection = send(owner, "POST", "/api/settings/ai/test", Map.of());
             assertThat(connection.path("ok").asBoolean()).isTrue();
             JsonNode plan = seedPlan(owner);
@@ -427,6 +434,29 @@ class CoachFlowTest {
         JsonNode plan = send(session, "POST", "/api/plan/generate", Map.of("revision", active.path("revision").asLong()))
                 .path("workspace").path("plan");
         assertThat(plan.path("basis").toString()).contains("训练前检查", "初始化与状态清理");
+    }
+
+    @Test
+    void synced1900UsesAdvancedCandidatesAndManualLevelHasNoArtificialCeiling() throws Exception {
+        MockHttpSession session = register();
+        JsonNode initial = getJson(session, "/api/state");
+        var profile = (com.fasterxml.jackson.databind.node.ObjectNode) initial.path("workspace").path("profile").deepCopy();
+        profile.put("handle", "advanced_user");
+        profile.put("level", 2400);
+        profile.set("dailyMinutes", json.valueToTree(List.of(120,120,120,120,120,120,120)));
+        send(session, "PUT", "/api/profile", Map.of("revision", initial.path("revision").asLong(), "profile", profile));
+        long id = store.accountByName(initial.path("username").asText()).id();
+        Models.SyncInfo info = new Models.SyncInfo();
+        info.handle = "advanced_user";
+        info.rating = 1900;
+        info.syncedAt = java.time.Instant.now().toString();
+        store.saveSync(id, info.handle, List.of(), info);
+        var workspace = store.snapshot(id).workspace();
+        assertThat(Planner.trainingLevel(workspace)).isEqualTo(1900);
+        var pool = new Planner(store).candidates(id, workspace);
+        assertThat(pool).isNotEmpty().allSatisfy(problem -> assertThat(problem.rating).isBetween(1700, 2100));
+        workspace.profile.manualLevel = true;
+        assertThat(Planner.trainingLevel(workspace)).isEqualTo(2400);
     }
 
     @Test

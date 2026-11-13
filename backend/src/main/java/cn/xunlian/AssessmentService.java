@@ -56,7 +56,7 @@ public class AssessmentService {
         if (workspace.plan != null) workspace.plan.tasks.forEach(task -> seen.add(task.problemId));
         List<String> candidates = planner.candidates(userId, workspace).stream()
                 .filter(p -> "CF".equals(p.platform) && !seen.contains(p.id))
-                .sorted(Comparator.comparingInt((Problem p) -> Math.abs(Objects.requireNonNullElse(p.rating, 0) - workspace.profile.level))
+                .sorted(Comparator.comparingInt((Problem p) -> Math.abs(Objects.requireNonNullElse(p.rating, 0) - Planner.trainingLevel(workspace)))
                         .thenComparing(p -> p.id))
                 .map(p -> p.id).limit(3).toList();
         if (candidates.size() != 3) throw conflict("当前难度和专题内不足 3 道未见题，请调整训练设置");

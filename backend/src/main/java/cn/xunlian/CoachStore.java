@@ -104,6 +104,32 @@ public class CoachStore {
         return db.query("SELECT payload FROM problems", (rs, row) -> decode(rs.getString(1), Problem.class));
     }
 
+    public Map<String, Object> codeforcesEvidence(long userId, Workspace workspace) {
+        String handle = workspace.profile.handle;
+        if (handle.isBlank() || workspace.sync.syncedAt == null || !handle.equalsIgnoreCase(workspace.sync.handle)) {
+            return Map.of("handle", handle, "synced", false);
+        }
+        List<Map<String, Object>> recent = db.queryForList("""
+                SELECT submission_id,problem_id,verdict,submitted_at FROM cf_submissions
+                WHERE user_id=? AND LOWER(handle)=LOWER(?) ORDER BY submitted_at DESC,submission_id DESC LIMIT 40
+                """, userId, handle);
+        var attempted = attempted(userId, handle);
+        var solved = solved(userId, handle);
+        Map<String, int[]> difficulty = new TreeMap<>();
+        for (Problem problem : problems()) {
+            if (problem.rating == null || !attempted.contains(problem.id)) continue;
+            int[] counts = difficulty.computeIfAbsent(problem.difficulty, key -> new int[2]);
+            counts[0]++;
+            if (solved.contains(problem.id)) counts[1]++;
+        }
+        Map<String, Object> evidence = new LinkedHashMap<>();
+        evidence.put("synced", true);
+        evidence.put("summary", workspace.sync);
+        evidence.put("recentSubmissions", recent);
+        evidence.put("catalogDifficultyAttemptedAndAccepted", difficulty);
+        return evidence;
+    }
+
     public Set<String> attempted(long userId, String handle) {
         return new HashSet<>(db.queryForList(
                 "SELECT DISTINCT problem_id FROM cf_submissions WHERE user_id=? AND LOWER(handle)=LOWER(?)",

@@ -14,14 +14,25 @@ public class Planner {
 
     public Planner(CoachStore store) { this.store = store; }
 
+    public static int trainingLevel(Workspace workspace) {
+        return !workspace.profile.manualLevel && hasSyncedRating(workspace)
+                ? workspace.sync.rating : workspace.profile.level;
+    }
+
+    private static boolean hasSyncedRating(Workspace workspace) {
+        return !workspace.profile.handle.isBlank() && workspace.sync.rating != null
+                && workspace.profile.handle.equalsIgnoreCase(workspace.sync.handle);
+    }
+
     public List<Problem> candidates(long userId, Workspace workspace) {
         Set<String> excluded = store.excluded(userId, workspace);
         if (workspace.assessment != null) excluded.addAll(workspace.assessment.problemIds);
         workspace.assessmentHistory.forEach(test -> excluded.addAll(test.problemIds));
+        int target = trainingLevel(workspace);
         return store.problems().stream()
-                .filter(problem -> !excluded.contains(problem.id))
+                .filter(problem -> !problem.historicalOnly && !excluded.contains(problem.id))
                 .filter(problem -> problem.tags.stream().anyMatch(workspace.profile.topics::contains))
-                .filter(problem -> problem.rating == null || (problem.rating >= workspace.profile.level - 200 && problem.rating <= workspace.profile.level + 200))
+                .filter(problem -> problem.rating == null ? target < 1600 || "计算几何".equals(String.join("", workspace.profile.topics)) : Math.abs((long) problem.rating - target) <= 200)
                 .sorted(Comparator.comparingInt((Problem problem) -> problem.minutes).thenComparing(problem -> problem.id))
                 .toList();
     }
@@ -66,6 +77,8 @@ public class Planner {
                 .map(problem -> problem.tags.isEmpty() ? "" : problem.tags.get(0)).orElse("");
         List<Problem> available = new ArrayList<>(candidates(userId, workspace));
         available.sort(Comparator.comparingInt((Problem problem) -> problem.tags.contains(focus) ? 0 : 1)
+                .thenComparingLong(problem -> problem.rating == null ? Long.MAX_VALUE
+                        : Math.abs((long) problem.rating - trainingLevel(workspace)))
                 .thenComparingInt(problem -> problem.minutes));
         int firstDay = today.getDayOfWeek().getValue() - 1;
         int added = 0;
@@ -99,7 +112,7 @@ public class Planner {
         }
         plan.tasks.sort(Comparator.comparingInt(task -> task.day));
         plan.explanation = added == 0
-                ? "本周剩余时段没有能容纳的候选题。可以增加可用时间、调整专题或同步更多题目。"
+                ? "当前难度带内没有能排入本周的候选题，请检查题库覆盖、训练专题与剩余时间。"
                 : "已保留有训练记录的任务，按本周剩余时段安排 " + added + " 道新题。" + (focus.isEmpty() ? "" : "优先巩固近期需要帮助的" + focus + "专题。");
         plan.basis = new ArrayList<>(memory.stream().limit(2).toList());
         AbilityDetails.mistakes(workspace.feedback).stream().filter(item -> item.count() >= 2).limit(2)
