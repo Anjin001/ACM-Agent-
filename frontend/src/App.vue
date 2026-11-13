@@ -323,7 +323,7 @@ function generate() {
   act('generate', async () => {
     adopt(await api<AppState>('/plan/generate', 'POST', { revision: state.value!.revision }))
     selectedDay.value = -1
-    notify('本周计划已生成')
+    notify(plan.value?.engine === 'model' ? 'AI 已生成本周计划' : (plan.value?.modelMessage || '本周计划已生成'))
   })
 }
 function openFeedback(task: Task) {
@@ -403,6 +403,12 @@ function saveAiSettings() {
     adopt(await api<AppState>('/settings/ai', 'PUT', payload), false)
     resetAiDraft()
     notify('模型配置已保存在本机')
+  })
+}
+function testAiSettings() {
+  act('ai-test', async () => {
+    const result = await api<{ ok: boolean; message: string }>('/settings/ai/test', 'POST')
+    notify(result.message, !result.ok)
   })
 }
 function clearAiSettings() {
@@ -911,6 +917,9 @@ onUnmounted(() => {
               </button>
             </div>
           </div>
+          <p v-if="plan?.modelMessage" class="notice" role="status">
+            <strong>{{ plan.engine === 'model' ? '模型生成' : '规则生成' }}</strong> {{ plan.modelMessage }}
+          </p>
           <div class="plan-layout">
             <section
               v-for="(day, index) in weekdays"
@@ -1320,11 +1329,15 @@ onUnmounted(() => {
                   </label>
                   <p v-if="state.aiSettings.unreadable" class="panel-note">本机配置无法读取，请重新填写或清除。</p>
                   <p class="panel-note">
-                    Key 按账号加密保存在本机，保存后无法在页面查看。生成模型方案时，Key 用于向你填写的服务认证，调整计划会发送相关训练上下文，代码审查只发送你勾选的片段。
+                    Key 按账号加密保存在本机，保存后无法在页面查看。生成或调整周计划时，相关训练上下文会发给该服务，Key 用于认证。目录分析开启 AI 后会发送统计和代表证据。
                   </p>
                   <div class="ai-settings-actions">
                     <button class="button primary" type="button" :disabled="!!busy" @click="saveAiSettings">
                       {{ busy === 'ai-save' ? '正在保存' : '保存模型配置' }}
+                    </button>
+                    <button v-if="state.aiConfigured" class="button outline" type="button"
+                      :disabled="!!busy" @click="testAiSettings">
+                      {{ busy === 'ai-test' ? '正在测试' : '测试连接' }}
                     </button>
                     <button v-if="state.aiSettings.hasLocalKey || state.aiSettings.unreadable" class="button outline"
                       type="button" :disabled="!!busy" @click="clearAiSettings">

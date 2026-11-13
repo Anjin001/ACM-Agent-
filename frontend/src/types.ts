@@ -34,6 +34,7 @@ export interface Plan {
   version: number
   engine: string
   explanation: string
+  modelMessage?: string
   basis?: string[]
   timeEcho?: string
   tasks: Task[]

@@ -49,11 +49,15 @@ public class AiCoach {
     public void refine(Account account, Proposal proposal, Workspace workspace, List<Problem> candidates, String instruction,
                        List<String> memory, ProfileModel profile) {
         proposal.engine = "rules";
-        proposal.basis = new ArrayList<>(memory.stream().limit(3).toList());
+        proposal.basis = new ArrayList<>(proposal.plan.basis);
         try {
             LocalAiSettings.Credentials config = credentials(account);
             if (config == null) {
                 proposal.modelMessage = "当前使用规则教练。配置模型服务后，可根据复盘文字进一步调整。";
+                return;
+            }
+            if (proposal.plan.tasks.stream().noneMatch(task -> "todo".equals(task.status))) {
+                proposal.modelMessage = "当前没有可排入的待做任务，请检查剩余时间和训练专题。";
                 return;
             }
             List<Problem> pool = candidates.stream().limit(60).toList();
@@ -64,6 +68,10 @@ public class AiCoach {
             context.put("profileSummary", profile == null ? "" : profile.summary);
             context.put("weaknesses", profile == null ? List.of() : profile.weaknesses);
             context.put("memory", memory);
+            context.put("recentMistakePatterns", AbilityDetails.mistakes(workspace.feedback).stream()
+                    .filter(mistake -> mistake.count() >= 2)
+                    .map(mistake -> Map.of("name", mistake.name(), "count", mistake.count(), "reminder", mistake.reminder()))
+                    .toList());
             var latestAssessment = workspace.assessment != null && !workspace.assessment.results.isEmpty()
                     ? workspace.assessment : workspace.assessmentHistory.stream().filter(test -> !test.results.isEmpty()).findFirst().orElse(null);
             if (latestAssessment != null) {
@@ -74,7 +82,8 @@ public class AiCoach {
             context.put("baselinePlan", proposal.plan);
             context.put("candidates", pool);
             context.put("instruction", instruction);
-            String system = "你是 ACM 训练教练。根据反馈和 memory 调整本周尚未完成的任务。只选 candidates 中的 problemId。"
+            String system = "你是 ACM 训练教练。根据画像、近期复盘、短测和重复错因生成或调整本周待做任务。只选 candidates 中的 problemId。"
+                    + "按近期错因给出具体的练法或开题前检查，区分学员自述和实际判题。"
                     + "保留已完成任务由服务端负责，你只返回新安排的待做任务。遵守 baselinePlan.dailyMinutes 的每天预算和 weekStart，禁止安排过去日期。"
                     + "用时至少为题目的 minutes。reason 必须说明调整依据，并引用 memory 中的观察。"
                     + "输出 JSON 对象 {reason:中文调整理由,basis:[引用到的 memory 原文],tasks:[{problemId:候选题ID,day:0到6,minutes:整数,reason:中文推荐理由}]}。最多6道题。";
@@ -108,14 +117,16 @@ public class AiCoach {
             refined.tasks.sort(Comparator.comparingInt(task -> task.day));
             refined.engine = "model";
             refined.explanation = reason.substring(0, Math.min(1500, reason.length()));
-            refined.basis = citations(result, memory, profile);
+            LinkedHashSet<String> basis = new LinkedHashSet<>(refined.basis);
+            basis.addAll(citations(result, memory, profile));
+            refined.basis = new ArrayList<>(basis);
             proposal.plan = refined;
             proposal.reason = refined.explanation;
             proposal.engine = "model";
             proposal.basis = new ArrayList<>(refined.basis);
             proposal.modelMessage = "模型已生成方案，题目、时间预算与引用依据已通过检查。";
         } catch (Exception ex) {
-            proposal.modelMessage = "模型调用或结果校验未通过，本次使用规则方案。可检查模型配置后重试。";
+            proposal.modelMessage = failureMessage(ex) + " 本次使用规则方案。";
             if (ex instanceof InterruptedException) Thread.currentThread().interrupt();
         }
     }
@@ -137,6 +148,39 @@ public class AiCoach {
             if (picked.size() == 3) break;
         }
         return picked.isEmpty() ? new ArrayList<>(memory.stream().limit(2).toList()) : picked;
+    }
+
+    Map<String, Object> testConnection(Account account) {
+        try {
+            LocalAiSettings.Credentials config = credentials(account);
+            if (config == null) return Map.of("ok", false, "message", "请先保存模型服务地址、模型名称和 API Key。");
+            JsonNode reply = json.readTree(complete(config, "只返回 JSON 对象 {\"ok\":true}。", Map.of(), 20));
+            boolean ok = reply != null && reply.path("ok").asBoolean();
+            return Map.of("ok", ok, "message", ok ? "连接成功，模型已返回可用结果。" : "服务已响应，但未返回可用的 JSON 结果。");
+        } catch (Exception ex) {
+            if (ex instanceof InterruptedException) Thread.currentThread().interrupt();
+            return Map.of("ok", false, "message", failureMessage(ex));
+        }
+    }
+
+    private String failureMessage(Exception ex) {
+        if (ex instanceof ProviderStatus provider) {
+            return switch (provider.status) {
+                case 401, 403 -> "模型服务拒绝认证，请核对 API Key 和模型权限。";
+                case 404 -> "模型服务返回 404，请核对服务地址和模型名称。";
+                case 429 -> "模型服务限流或额度不足，请稍后重试。";
+                default -> "模型服务返回 HTTP " + provider.status + "，请检查服务配置。";
+            };
+        }
+        if (ex instanceof java.io.IOException && !(ex instanceof com.fasterxml.jackson.core.JsonProcessingException)) {
+            return "模型服务连接失败或超时，请检查地址和网络。";
+        }
+        return "模型回复或配置未通过校验，请检查模型是否支持 JSON 输出。";
+    }
+
+    private static final class ProviderStatus extends RuntimeException {
+        final int status;
+        ProviderStatus(int status) { this.status = status; }
     }
 
     /** 代码审查的模型通道；失败时保留规则结果。 */
@@ -211,7 +255,7 @@ public class AiCoach {
                 .timeout(Duration.ofSeconds(timeoutSeconds)).header("Authorization", "Bearer " + config.apiKey())
                 .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build();
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) throw new IllegalArgumentException("模型服务返回 HTTP " + response.statusCode());
+        if (response.statusCode() != 200) throw new ProviderStatus(response.statusCode());
         String content = json.readTree(response.body()).path("choices").path(0).path("message").path("content").asText();
         if (config.apiKey().length() >= 8 && content.contains(config.apiKey())) {
             throw new IllegalArgumentException("模型返回中包含认证信息");

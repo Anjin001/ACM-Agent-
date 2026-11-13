@@ -58,7 +58,9 @@ class CoachFlowTest {
                 }
                 JsonNode context = json.readTree(request.path("messages").path(1).path("content").asText());
                 Object answer;
-                if (context.has("filesScanned")) {
+                if (context.isEmpty()) {
+                    answer = Map.of("ok", true);
+                } else if (context.has("filesScanned")) {
                     if (raw.contains("raw_only_marker")) {
                         exchange.sendResponseHeaders(400, -1);
                         return;
@@ -108,7 +110,10 @@ class CoachFlowTest {
                 }
             }
 
+            JsonNode connection = send(owner, "POST", "/api/settings/ai/test", Map.of());
+            assertThat(connection.path("ok").asBoolean()).isTrue();
             JsonNode plan = seedPlan(owner);
+            assertThat(plan.path("workspace").path("plan").path("engine").asText()).isEqualTo("model");
             JsonNode proposal = send(owner, "POST", "/api/plan/proposal",
                     Map.of("revision", plan.path("revision").asLong(), "instruction", "每天90分钟"));
             assertThat(proposal.path("workspace").path("proposal").path("engine").asText()).isEqualTo("model");

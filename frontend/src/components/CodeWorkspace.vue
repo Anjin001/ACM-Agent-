@@ -207,7 +207,7 @@ onMounted(() => run('load', async () => {
     </section>
     <div class="workspace-actions">
       <label v-if="aiConfigured">
-        <input v-model="useModel" type="checkbox" :disabled="!!busy" />使用已配置的 AI 模型汇总
+        <input v-model="useModel" type="checkbox" :disabled="!!busy" />使用 AI 汇总和回复
       </label>
       <button v-if="folder" class="button primary" type="button" :disabled="!!busy" @click="analyze">扫描整个目录</button>
     </div>

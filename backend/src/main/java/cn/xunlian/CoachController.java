@@ -70,6 +70,11 @@ public class CoachController {
                 "syncJob", cf.status(id));
     }
 
+    @PostMapping("/settings/ai/test")
+    public Map<String, Object> testAiSettings(HttpServletRequest request) {
+        return ai.testConnection(localAiAccount(request));
+    }
+
     @PutMapping("/settings/ai")
     public Map<String, Object> saveAiSettings(@RequestBody LocalAiSettings.Update update, HttpServletRequest request) {
         Account account = localAiAccount(request);
@@ -152,7 +157,15 @@ public class CoachController {
         long id = userId(session);
         Snapshot snapshot = checked(id, body.revision());
         Workspace workspace = snapshot.workspace();
-        Plan plan = planner.generate(id, workspace, "", memory.activeStatements(id, 3));
+        List<String> statements = memory.activeStatements(id, 3);
+        Proposal proposal = new Proposal();
+        proposal.plan = planner.generate(id, workspace, "", statements);
+        proposal.reason = proposal.plan.explanation;
+        List<Problem> problems = store.problems();
+        ai.refine(store.account(id), proposal, workspace, planner.candidates(id, workspace), "",
+                statements, modeler.build(workspace, problems));
+        Plan plan = proposal.plan;
+        plan.modelMessage = proposal.modelMessage;
         archive(workspace);
         workspace.plan = plan;
         workspace.proposal = null;

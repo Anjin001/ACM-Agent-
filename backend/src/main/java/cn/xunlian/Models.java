@@ -44,6 +44,7 @@ public final class Models {
         public List<Integer> dailyMinutes = new ArrayList<>();
         public int version = 1;
         public String engine = "rules";
+        public String modelMessage;
         public String explanation = "根据目标专题、题目难度和可用时间安排训练。";
         /** 计划所依据的记忆条目或画像结论，逐条可在界面上核对。 */
         public List<String> basis = new ArrayList<>();
