@@ -159,10 +159,14 @@ public final class Models {
         public double rate;
     }
 
+    public record PlatformCoverage(String topic, int attempted, int accepted) {}
+
     public record TimedEvidence(String problemId, String title, String status, int submissions,
                                 Long firstAcceptedSeconds, long assessedAt) {}
 
     public static class ProfileModel {
+        public List<PlatformCoverage> codeforcesCoverage = new ArrayList<>();
+        public boolean codeforcesCoverageTruncated;
         public List<TimedEvidence> timedEvidence = new ArrayList<>();
         public List<TopicStat> topics = new ArrayList<>();
         public List<BucketStat> buckets = new ArrayList<>();

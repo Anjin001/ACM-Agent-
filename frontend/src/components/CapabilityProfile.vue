@@ -75,6 +75,17 @@ function biasText(bias: number) {
         </div>
       </div>
 
+      <details v-if="model.codeforcesCoverage.length">
+        <summary>Codeforces 专题覆盖</summary>
+        <p class="cap-sub">仅统计能匹配题库的已同步题目，按题去重。</p>
+        <p v-if="model.codeforcesCoverageTruncated" class="cap-sub">同步有范围限制，较早提交可能缺失。</p>
+        <ul>
+          <li v-for="item in model.codeforcesCoverage" :key="item.topic">
+            {{ item.topic }} · 尝试 {{ item.attempted }} 题 · 通过 {{ item.accepted }} 题
+          </li>
+        </ul>
+      </details>
+
       <details v-if="model.timedEvidence.length">
         <summary>近期短测证据</summary>
         <ul>

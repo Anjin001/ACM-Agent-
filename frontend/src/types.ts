@@ -149,6 +149,8 @@ export interface BucketStat {
 }
 
 export interface ProfileModel {
+  codeforcesCoverage: { topic: string; attempted: number; accepted: number }[]
+  codeforcesCoverageTruncated: boolean
   timedEvidence: { problemId: string; title: string; status: string; submissions: number; firstAcceptedSeconds: number | null; assessedAt: number }[]
   topics: TopicStat[]
   buckets: BucketStat[]

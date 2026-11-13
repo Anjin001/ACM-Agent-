@@ -10,6 +10,21 @@ import static cn.xunlian.Models.*;
 @Service
 public class ProfileModeler {
 
+    public List<PlatformCoverage> platformCoverage(List<Problem> problems, Set<String> attempted, Set<String> accepted) {
+        Map<String, int[]> topics = new TreeMap<>();
+        for (Problem problem : problems) {
+            if (!"CF".equals(problem.platform) || !attempted.contains(problem.id)) continue;
+            for (String tag : new HashSet<>(problem.tags)) {
+                int[] counts = topics.computeIfAbsent(tag, key -> new int[2]);
+                counts[0]++;
+                if (accepted.contains(problem.id)) counts[1]++;
+            }
+        }
+        return topics.entrySet().stream()
+                .map(entry -> new PlatformCoverage(entry.getKey(), entry.getValue()[0], entry.getValue()[1]))
+                .toList();
+    }
+
     public ProfileModel build(Workspace workspace, List<Problem> problems) {
         Map<String, Problem> byId = new HashMap<>();
         problems.forEach(problem -> byId.put(problem.id, problem));

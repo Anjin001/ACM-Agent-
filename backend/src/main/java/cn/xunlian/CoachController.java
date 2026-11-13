@@ -275,7 +275,15 @@ public class CoachController {
     @GetMapping("/profile/model")
     public ProfileModel profileModel(HttpSession session) {
         long id = userId(session);
-        return modeler.build(store.snapshot(id).workspace(), store.problems());
+        Workspace workspace = store.snapshot(id).workspace();
+        List<Problem> problems = store.problems();
+        ProfileModel model = modeler.build(workspace, problems);
+        String handle = workspace.profile.handle;
+        if (!handle.isBlank() && handle.equalsIgnoreCase(workspace.sync.handle) && workspace.sync.syncedAt != null) {
+            model.codeforcesCoverage = modeler.platformCoverage(problems, store.attempted(id, handle), store.solved(id, handle));
+            model.codeforcesCoverageTruncated = workspace.sync.truncated;
+        }
+        return model;
     }
 
     // ---------------------------------------------------------------- 教练记忆

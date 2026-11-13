@@ -288,6 +288,7 @@ class CoachFlowTest {
         assertThat(results.path(2).path("status").asText()).isEqualTo("unsubmitted");
         JsonNode model = getJson(session, "/api/profile/model");
         assertThat(model.path("timedEvidence").size()).isEqualTo(3);
+        assertThat(model.path("codeforcesCoverage").toString()).contains("\"accepted\":1");
         assertThat(model.path("samples").asInt()).isZero();
         assertThat(send(session, "POST", base + "/settle", Map.of()).path("current").path("results")).isEqualTo(results);
         var planSnapshot = store.snapshot(userId);
