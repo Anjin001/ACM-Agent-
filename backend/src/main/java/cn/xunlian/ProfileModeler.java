@@ -9,6 +9,48 @@ import static cn.xunlian.Models.*;
 /** 能力画像：按专题与难度分桶统计等级、样本数、用时偏差和证据链。 */
 @Service
 public class ProfileModeler {
+    private record Area(String name, List<String> tags) {}
+
+    private static final List<Area> AREAS = List.of(
+            new Area("基础实现", List.of("模拟", "字符串")),
+            new Area("查找与决策", List.of("二分", "双指针", "贪心")),
+            new Area("搜索与图论", List.of("搜索", "图论")),
+            new Area("动态规划", List.of("动态规划")),
+            new Area("数据结构", List.of("数据结构")),
+            new Area("数学", List.of("数学")));
+
+    public List<AbilityArea> abilityAreas(Workspace workspace, List<Problem> problems, Set<String> attempted,
+                                          Set<String> accepted) {
+        Map<String, Feedback> latestByProblem = new HashMap<>();
+        workspace.feedback.stream().sorted(Comparator.comparing(row -> Objects.toString(row.createdAt, "")))
+                .forEach(row -> latestByProblem.put(row.problemId, row));
+        List<AbilityArea> result = new ArrayList<>();
+        for (Area area : AREAS) {
+            List<Problem> matches = problems.stream().filter(problem -> !Collections.disjoint(area.tags(), problem.tags)).toList();
+            int samples = 0;
+            int independent = 0;
+            int cfAttempted = 0;
+            int cfAccepted = 0;
+            double difficultySum = 0;
+            for (Problem problem : matches) {
+                Feedback latest = latestByProblem.get(problem.id);
+                if (latest != null) {
+                    samples++;
+                    if ("independent".equals(latest.outcome)) {
+                        independent++;
+                        difficultySum += problem.rating == null ? 0 : clamp((problem.rating - 800) / 800.0);
+                    }
+                }
+                if ("CF".equals(problem.platform) && attempted.contains(problem.id)) {
+                    cfAttempted++;
+                    if (accepted.contains(problem.id)) cfAccepted++;
+                }
+            }
+            Integer level = samples < 3 ? null : 1 + (int) Math.round(4 * (0.7 * independent + 0.3 * difficultySum) / samples);
+            result.add(new AbilityArea(area.name(), area.tags(), level, samples, independent, cfAttempted, cfAccepted));
+        }
+        return result;
+    }
 
     public List<PlatformCoverage> platformCoverage(List<Problem> problems, Set<String> attempted, Set<String> accepted) {
         Map<String, int[]> topics = new TreeMap<>();

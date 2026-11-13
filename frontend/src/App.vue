@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import {
   LayoutDashboard,
+  ChartNoAxesColumnIncreasing,
   CalendarDays,
   Library,
   NotebookPen,
@@ -32,7 +33,7 @@ import {
   Code2,
 } from 'lucide-vue-next'
 import TaskList from './components/TaskList.vue'
-import CapabilityProfile from './components/CapabilityProfile.vue'
+import AbilityAssessment from './components/AbilityAssessment.vue'
 import MemoryPanel from './components/MemoryPanel.vue'
 import CodeWorkspace from './components/CodeWorkspace.vue'
 import TimedAssessment from './components/TimedAssessment.vue'
@@ -48,11 +49,12 @@ import type {
   MemoryEvent,
 } from './types'
 
-type Page = 'dashboard' | 'plan' | 'library' | 'review' | 'code' | 'settings'
+type Page = 'dashboard' | 'plan' | 'library' | 'review' | 'ability' | 'code' | 'settings'
 const navigation = [
   { id: 'dashboard' as Page, label: '训练概览', icon: LayoutDashboard },
   { id: 'plan' as Page, label: '周训练计划', icon: CalendarDays },
   { id: 'library' as Page, label: '精选题库', icon: Library },
+  { id: 'ability' as Page, label: '能力评估', icon: ChartNoAxesColumnIncreasing },
   { id: 'review' as Page, label: '训练复盘', icon: NotebookPen },
   { id: 'code' as Page, label: '代码审查', icon: Code2 },
 ]
@@ -94,6 +96,16 @@ const platform = ref('all')
 const topic = ref('all')
 const libraryPage = ref(1)
 const profileModel = ref<ProfileModel | null>(null)
+const profileError = ref('')
+const profileLoading = ref(false)
+let profileRequest = 0
+watch(() => state.value?.username, () => {
+  profileRequest++
+  profileModel.value = null
+  profileError.value = ''
+  profileLoading.value = false
+  if (page.value === 'ability') void loadProfileModel()
+}, { flush: 'sync' })
 const memoryData = ref<{ observations: Observation[]; events: MemoryEvent[] }>({
   observations: [],
   events: [],
@@ -180,7 +192,7 @@ const activePageTitle = computed(
 
 function readPage(): Page {
   const hash = location.hash.replace('#', '')
-  return ['dashboard', 'plan', 'library', 'review', 'code', 'settings'].includes(hash)
+  return ['dashboard', 'plan', 'library', 'review', 'ability', 'code', 'settings'].includes(hash)
     ? (hash as Page)
     : 'dashboard'
 }
@@ -197,10 +209,8 @@ watch([query, platform, topic], () => {
   libraryPage.value = 1
 })
 watch(page, (value) => {
-  if (value === 'review' || value === 'code') {
-    loadProfileModel()
-    if (!memoryLoaded.value) loadMemory()
-  }
+  if (value === 'ability') void loadProfileModel()
+  if ((value === 'review' || value === 'code') && !memoryLoaded.value) void loadMemory()
 })
 watch(modal, async (value, oldValue) => {
   if (value && !oldValue) previousFocus = document.activeElement as HTMLElement
@@ -235,10 +245,17 @@ async function load() {
   }
 }
 async function loadProfileModel() {
+  if (!state.value) return
+  const request = ++profileRequest
+  profileLoading.value = true
+  profileError.value = ''
   try {
-    profileModel.value = await api<ProfileModel>('/profile/model')
+    const model = await api<ProfileModel>('/profile/model')
+    if (request === profileRequest) profileModel.value = model
   } catch {
-    profileModel.value = profileModel.value
+    if (request === profileRequest) profileError.value = '能力评估加载失败，请重试'
+  } finally {
+    if (request === profileRequest) profileLoading.value = false
   }
 }
 async function loadMemory() {
@@ -1120,8 +1137,7 @@ onUnmounted(() => {
               <p class="panel-note">每次任务保留最新复盘。撤销计划调整时，已有复盘仍会保留。</p>
             </aside>
           </div>
-          <div class="insight-grid">
-            <CapabilityProfile :model="profileModel" />
+          <div>
             <MemoryPanel
               :observations="memoryData.observations"
               :events="memoryData.events"
@@ -1132,6 +1148,11 @@ onUnmounted(() => {
               @refresh="loadMemory"
             />
           </div>
+        </template>
+
+        <template v-if="page === 'ability'">
+          <AbilityAssessment :model="profileModel" :loading="profileLoading" :error="profileError" :demo="state.demo"
+            @refresh="loadProfileModel" @open-plan="navigate('plan')" />
         </template>
 
         <template v-if="page === 'code'">

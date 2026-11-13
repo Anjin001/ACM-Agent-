@@ -279,10 +279,15 @@ public class CoachController {
         List<Problem> problems = store.problems();
         ProfileModel model = modeler.build(workspace, problems);
         String handle = workspace.profile.handle;
+        Set<String> attempted = Set.of();
+        Set<String> accepted = Set.of();
         if (!handle.isBlank() && handle.equalsIgnoreCase(workspace.sync.handle) && workspace.sync.syncedAt != null) {
-            model.codeforcesCoverage = modeler.platformCoverage(problems, store.attempted(id, handle), store.solved(id, handle));
+            attempted = store.attempted(id, handle);
+            accepted = store.solved(id, handle);
+            model.codeforcesCoverage = modeler.platformCoverage(problems, attempted, accepted);
             model.codeforcesCoverageTruncated = workspace.sync.truncated;
         }
+        model.abilityAreas = modeler.abilityAreas(workspace, problems, attempted, accepted);
         return model;
     }
 

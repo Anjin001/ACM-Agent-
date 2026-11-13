@@ -148,7 +148,18 @@ export interface BucketStat {
   rate: number
 }
 
+export interface AbilityArea {
+  name: string
+  topics: string[]
+  level: number | null
+  samples: number
+  independent: number
+  codeforcesAttempted: number
+  codeforcesAccepted: number
+}
+
 export interface ProfileModel {
+  abilityAreas: AbilityArea[]
   codeforcesCoverage: { topic: string; attempted: number; accepted: number }[]
   codeforcesCoverageTruncated: boolean
   timedEvidence: { problemId: string; title: string; status: string; submissions: number; firstAcceptedSeconds: number | null; assessedAt: number }[]

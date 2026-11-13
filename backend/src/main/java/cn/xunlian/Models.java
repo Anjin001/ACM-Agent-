@@ -164,7 +164,11 @@ public final class Models {
     public record TimedEvidence(String problemId, String title, String status, int submissions,
                                 Long firstAcceptedSeconds, long assessedAt) {}
 
+    public record AbilityArea(String name, List<String> topics, Integer level, int samples,
+                              int independent, int codeforcesAttempted, int codeforcesAccepted) {}
+
     public static class ProfileModel {
+        public List<AbilityArea> abilityAreas = new ArrayList<>();
         public List<PlatformCoverage> codeforcesCoverage = new ArrayList<>();
         public boolean codeforcesCoverageTruncated;
         public List<TimedEvidence> timedEvidence = new ArrayList<>();

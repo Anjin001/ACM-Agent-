@@ -340,6 +340,54 @@ class CoachFlowTest {
     }
 
     @Test
+    void broadAbilityChartDistinguishesCoverageFromRatedEvidence() throws Exception {
+        MockHttpSession session = register();
+        JsonNode initial = getJson(session, "/api/state");
+        long userId = store.accountByName(initial.path("username").asText()).id();
+        {
+            var snapshot = store.snapshot(userId);
+            var workspace = snapshot.workspace();
+            workspace.profile.handle = "chart_user";
+            List<Models.Problem> problems = store.problems().stream()
+                    .filter(p -> p.tags.contains("二分") && "CF".equals(p.platform)).limit(3).toList();
+            assertThat(problems).hasSize(3);
+            for (int i = 0; i < 2; i++) {
+                Models.Feedback feedback = new Models.Feedback();
+                feedback.problemId = problems.get(0).id;
+                feedback.outcome = "independent";
+                feedback.createdAt = "2026-11-01T01:00:0" + i + "Z";
+                workspace.feedback.add(feedback);
+            }
+            store.save(userId, snapshot.revision(), workspace);
+            Models.SyncInfo synced = new Models.SyncInfo();
+            synced.handle = "chart_user";
+            synced.syncedAt = java.time.Instant.now().toString();
+            store.saveSync(userId, synced.handle, List.of(
+                    new Models.Submission(1, problems.get(0).id, "OK", 1),
+                    new Models.Submission(2, problems.get(0).id, "OK", 2),
+                    new Models.Submission(3, problems.get(1).id, "WRONG_ANSWER", 3)), synced);
+            JsonNode early = getJson(session, "/api/profile/model").path("abilityAreas").path(1);
+            assertThat(early.path("samples").asInt()).isEqualTo(1);
+            assertThat(early.path("level").isNull()).isTrue();
+            assertThat(early.path("codeforcesAttempted").asInt()).isEqualTo(2);
+            assertThat(early.path("codeforcesAccepted").asInt()).isEqualTo(1);
+
+            snapshot = store.snapshot(userId);
+            for (var problem : problems.subList(1, 3)) {
+                Models.Feedback feedback = new Models.Feedback();
+                feedback.problemId = problem.id;
+                feedback.outcome = "independent";
+                snapshot.workspace().feedback.add(feedback);
+            }
+            store.save(userId, snapshot.revision(), snapshot.workspace());
+        }
+        JsonNode rated = getJson(session, "/api/profile/model").path("abilityAreas").path(1);
+        assertThat(rated.path("samples").asInt()).isEqualTo(3);
+        assertThat(rated.path("independent").asInt()).isEqualTo(3);
+        assertThat(rated.path("level").asInt()).isBetween(1, 5);
+    }
+
+    @Test
     void syncMergesWindowsAndRefreshesRejudgedVerdicts() throws Exception {
         MockHttpSession session = register();
         JsonNode initial = state(session);
