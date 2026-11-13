@@ -12,12 +12,14 @@ public class ProfileModeler {
     private record Area(String name, List<String> tags) {}
 
     private static final List<Area> AREAS = List.of(
-            new Area("基础实现", List.of("模拟", "字符串")),
+            new Area("基础实现", List.of("模拟")),
             new Area("查找与决策", List.of("二分", "双指针", "贪心")),
             new Area("搜索与图论", List.of("搜索", "图论")),
             new Area("动态规划", List.of("动态规划")),
             new Area("数据结构", List.of("数据结构")),
-            new Area("数学", List.of("数学")));
+            new Area("数学", List.of("数学")),
+            new Area("字符串", List.of("字符串")),
+            new Area("计算几何", List.of("计算几何")));
 
     public List<AbilityArea> abilityAreas(Workspace workspace, List<Problem> problems, Set<String> attempted,
                                           Set<String> accepted) {

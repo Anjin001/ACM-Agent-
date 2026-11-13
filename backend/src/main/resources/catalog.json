@@ -1725,5 +1725,107 @@
     "difficulty": "普及−",
     "minutes": 40,
     "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "CF-2148-B",
+    "platform": "CF",
+    "code": "2148B",
+    "title": "Lasers",
+    "url": "https://codeforces.com/problemset/problem/2148/B",
+    "tags": [
+      "计算几何"
+    ],
+    "rating": 800,
+    "difficulty": "800",
+    "minutes": 30,
+    "provenance": "CF 公开题库，几何专项补录"
+  },
+  {
+    "id": "CF-2120-B",
+    "platform": "CF",
+    "code": "2120B",
+    "title": "Square Pool",
+    "url": "https://codeforces.com/problemset/problem/2120/B",
+    "tags": [
+      "计算几何"
+    ],
+    "rating": 1000,
+    "difficulty": "1000",
+    "minutes": 30,
+    "provenance": "CF 公开题库，几何专项补录"
+  },
+  {
+    "id": "CF-2119-B",
+    "platform": "CF",
+    "code": "2119B",
+    "title": "Line Segments",
+    "url": "https://codeforces.com/problemset/problem/2119/B",
+    "tags": [
+      "计算几何",
+      "贪心",
+      "数学"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库，几何专项补录"
+  },
+  {
+    "id": "CF-2002-C",
+    "platform": "CF",
+    "code": "2002C",
+    "title": "Black Circles",
+    "url": "https://codeforces.com/problemset/problem/2002/C",
+    "tags": [
+      "计算几何",
+      "贪心",
+      "数学"
+    ],
+    "rating": 1200,
+    "difficulty": "1200",
+    "minutes": 40,
+    "provenance": "CF 公开题库，几何专项补录"
+  },
+  {
+    "id": "LG-P2742",
+    "platform": "LG",
+    "code": "P2742",
+    "title": "【模板】二维凸包 / 圈奶牛",
+    "url": "https://www.luogu.com.cn/problem/P2742",
+    "tags": [
+      "计算几何"
+    ],
+    "rating": null,
+    "difficulty": "专项练习",
+    "minutes": 55,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1452",
+    "platform": "LG",
+    "code": "P1452",
+    "title": "[USACO03FALL] Beauty Contest G",
+    "url": "https://www.luogu.com.cn/problem/P1452",
+    "tags": [
+      "计算几何"
+    ],
+    "rating": null,
+    "difficulty": "专项练习",
+    "minutes": 65,
+    "provenance": "人工精选，阶段标签仅供排期参考"
+  },
+  {
+    "id": "LG-P1742",
+    "platform": "LG",
+    "code": "P1742",
+    "title": "最小圆覆盖",
+    "url": "https://www.luogu.com.cn/problem/P1742",
+    "tags": [
+      "计算几何"
+    ],
+    "rating": null,
+    "difficulty": "专项练习",
+    "minutes": 75,
+    "provenance": "人工精选，阶段标签仅供排期参考"
   }
 ]

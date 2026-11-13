@@ -15,7 +15,7 @@ import static cn.xunlian.Models.*;
 @RestController
 @RequestMapping("/api")
 public class CoachController {
-    private static final Set<String> TOPICS = Set.of("二分", "搜索", "动态规划", "贪心", "图论", "数学", "字符串", "数据结构", "双指针", "模拟");
+    private static final Set<String> TOPICS = Set.of("二分", "搜索", "动态规划", "贪心", "图论", "数学", "字符串", "数据结构", "双指针", "模拟", "计算几何");
     private static final Set<String> MEMORY_KINDS = Set.of("goal", "error_pattern", "code_issue", "strength", "constraint");
 
     private final CoachStore store;
@@ -123,7 +123,7 @@ public class CoachController {
         if (profile == null || profile.name == null || profile.name.isBlank() || profile.name.length() > 30) bad("昵称需要 1～30 个字符");
         if (profile.handle == null || !profile.handle.matches("[A-Za-z0-9_.-]{0,24}")) bad("请填写有效的 CF handle");
         if (profile.goal == null || profile.goal.length() > 300) bad("训练目标最多 300 个字符");
-        if (profile.topics == null || profile.topics.isEmpty() || profile.topics.size() > 10 || !TOPICS.containsAll(profile.topics)) bad("请至少选择一个有效训练专题");
+        if (profile.topics == null || profile.topics.isEmpty() || profile.topics.size() > TOPICS.size() || !TOPICS.containsAll(profile.topics)) bad("请至少选择一个有效训练专题");
         if (profile.level < 800 || profile.level > 1600) bad("首版训练起点需在 800～1600 之间");
         if (profile.dailyMinutes == null || profile.dailyMinutes.size() != 7 || profile.dailyMinutes.stream().anyMatch(minutes -> minutes == null || minutes < 0 || minutes > 480)) bad("每天可用时间需在 0～480 分钟之间");
         long id = userId(session);
