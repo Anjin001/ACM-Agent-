@@ -64,6 +64,12 @@ public class AiCoach {
             context.put("profileSummary", profile == null ? "" : profile.summary);
             context.put("weaknesses", profile == null ? List.of() : profile.weaknesses);
             context.put("memory", memory);
+            var latestAssessment = workspace.assessment != null && !workspace.assessment.results.isEmpty()
+                    ? workspace.assessment : workspace.assessmentHistory.stream().filter(test -> !test.results.isEmpty()).findFirst().orElse(null);
+            if (latestAssessment != null) {
+                context.put("recentTimedAssessment", latestAssessment.results);
+                context.put("learnerReportedReflection", latestAssessment.reflection);
+            }
             context.put("recentFeedback", workspace.feedback.stream().skip(Math.max(0, workspace.feedback.size() - 8)).toList());
             context.put("baselinePlan", proposal.plan);
             context.put("candidates", pool);

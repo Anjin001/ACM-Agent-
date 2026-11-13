@@ -299,7 +299,10 @@ class CoachFlowTest {
                 .path("workspace").path("plan");
         assertThat(plan.path("basis").toString()).contains("最近限时短测中");
         assertThat(plan.path("tasks").toString()).contains("安排一道不同题目复核");
+        JsonNode reflected = send(session, "PUT", base + "/reflection", Map.of("note", " 卡在边界调试 "));
+        assertThat(reflected.path("current").path("reflection").asText()).isEqualTo("卡在边界调试");
         JsonNode next = send(session, "POST", "/api/assessment", Map.of());
+        assertThat(next.path("history").path(0).path("reflection").asText()).isEqualTo("卡在边界调试");
         assertThat(next.path("history").size()).isEqualTo(1);
         String nextId = next.path("current").path("id").asText();
         String nextRoute = "/api/assessment/" + nextId;

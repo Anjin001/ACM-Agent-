@@ -29,11 +29,13 @@ public class AssessmentService {
         public long deadline;
         public Long endedAt;
         public boolean cancelled;
+        public String reflection = "";
         public List<String> problemIds = new ArrayList<>();
         public List<Result> results = new ArrayList<>();
     }
 
     public record Result(String problemId, String status, int submissions, Long firstAcceptedSeconds) {}
+    public record Reflection(String note) {}
     public record State(Assessment current, List<Assessment> history, long serverTime) {}
 
     public State state(long userId) {
@@ -131,6 +133,19 @@ public class AssessmentService {
         assessment.endedAt = end;
         long solved = assessment.results.stream().filter(result -> "accepted".equals(result.status())).count();
         memory.event(userId, "assessment", "限时短测通过 " + solved + "/3 道题", null);
+        store.save(userId, snapshot.revision(), workspace);
+        return new State(assessment, workspace.assessmentHistory, now());
+    }
+
+    @Transactional
+    public State reflect(long userId, String id, Reflection reflection) {
+        Snapshot snapshot = store.snapshot(userId);
+        Workspace workspace = snapshot.workspace();
+        Assessment assessment = require(workspace, id);
+        if (assessment.results.isEmpty()) throw conflict("请先结算短测");
+        String note = Objects.toString(reflection.note(), "").strip();
+        if (note.length() > 600) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "短测复盘最多 600 个字符");
+        assessment.reflection = note;
         store.save(userId, snapshot.revision(), workspace);
         return new State(assessment, workspace.assessmentHistory, now());
     }

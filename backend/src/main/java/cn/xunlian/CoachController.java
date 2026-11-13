@@ -337,6 +337,12 @@ public class CoachController {
         return assessments.end(codeWorkspaceAccount(session).id(), id);
     }
 
+    @PutMapping("/assessment/{id}/reflection")
+    public AssessmentService.State reflectAssessment(@PathVariable String id,
+            @RequestBody AssessmentService.Reflection body, HttpSession session) {
+        return assessments.reflect(codeWorkspaceAccount(session).id(), id, body);
+    }
+
     @PostMapping("/assessment/{id}/cancel")
     public AssessmentService.State cancelAssessment(@PathVariable String id, HttpSession session) {
         return assessments.cancel(codeWorkspaceAccount(session).id(), id);

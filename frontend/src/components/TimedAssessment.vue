@@ -6,12 +6,14 @@ import type { Problem, SyncJob } from '../types'
 defineProps<{ problems: Record<string, Problem>; syncJob: SyncJob }>()
 const emit = defineEmits<{ sync: [] }>()
 type Result = { problemId: string; status: string; submissions: number; firstAcceptedSeconds: number | null }
-type Assessment = { id: string; handle: string; startedAt: number; deadline: number; endedAt: number | null; cancelled: boolean; problemIds: string[]; results: Result[] }
+type Assessment = { id: string; handle: string; startedAt: number; deadline: number; endedAt: number | null; cancelled: boolean; reflection: string; problemIds: string[]; results: Result[] }
 type State = { current: Assessment | null; history: Assessment[]; serverTime: number }
 
 const state = ref<State | null>(null)
 const busy = ref(false)
 const error = ref('')
+const reflection = ref('')
+const reflectionSaved = ref(false)
 const time = ref(Date.now())
 let serverOffset = 0
 let timer: ReturnType<typeof setInterval>
@@ -24,12 +26,14 @@ const labels: Record<string, string> = { accepted: '已通过', unsubmitted: '�
 function duration(value: number) {
   return Math.floor(value / 60) + ':' + String(value % 60).padStart(2, '0')
 }
-async function update(path = '/assessment', method = 'GET') {
+async function update(path = '/assessment', method = 'GET', body?: unknown) {
   if (busy.value) return
   busy.value = true
   error.value = ''
   try {
-    state.value = await api<State>(path, method)
+    state.value = await api<State>(path, method, body)
+    reflection.value = state.value.current?.reflection ?? ''
+    reflectionSaved.value = path.endsWith('/reflection')
     serverOffset = state.value.serverTime - Date.now() / 1000
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : '短测请求失败'
@@ -65,6 +69,15 @@ onUnmounted(() => clearInterval(timer))
         <template v-if="result.firstAcceptedSeconds !== null"> · 首次通过 {{ duration(result.firstAcceptedSeconds) }}</template>
       </p>
     </div>
+    <form v-if="current?.results.length" class="assessment-reflection"
+      @submit.prevent="update('/assessment/' + current.id + '/reflection', 'PUT', { note: reflection })">
+      <label>本场复盘
+        <textarea v-model="reflection" maxlength="600" rows="2" @input="reflectionSaved = false"
+          placeholder="哪道题卡在思路、实现或调试？是否看了提示？" />
+      </label>
+      <button type="submit" class="button outline" :disabled="busy">保存复盘</button>
+      <span v-if="reflectionSaved" role="status">已保存</span>
+    </form>
     <template v-if="state && canStart">
       <p v-if="current?.cancelled">本场已放弃。</p>
       <div class="assessment-actions">
@@ -102,6 +115,8 @@ onUnmounted(() => clearInterval(timer))
 .assessment-title p { color: #68788e; margin-top: 5px; }
 .assessment ol { margin: 0; padding-left: 22px; }
 .assessment a { color: #3159d9; }
+.assessment-reflection { display: grid; gap: 8px; }
+.assessment-reflection label { margin: 0; }
 .assessment-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .assessment .button { justify-self: start; }
 .assessment [role="alert"] { color: #a34b2f; }
