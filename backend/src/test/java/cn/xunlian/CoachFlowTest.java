@@ -257,6 +257,7 @@ class CoachFlowTest {
         JsonNode initial = getJson(session, "/api/state");
         var profile = (com.fasterxml.jackson.databind.node.ObjectNode) initial.path("workspace").path("profile").deepCopy();
         profile.put("handle", "sample_user");
+        profile.set("dailyMinutes", json.valueToTree(List.of(120,120,120,120,120,120,120)));
         send(session, "PUT", "/api/profile", Map.of("revision", initial.path("revision").asLong(), "profile", profile));
         long userId = store.accountByName(initial.path("username").asText()).id();
         Models.SyncInfo synced = new Models.SyncInfo();
@@ -266,6 +267,13 @@ class CoachFlowTest {
         store.saveSync(userId, synced.handle, List.of(), synced);
         JsonNode started = send(session, "POST", "/api/assessment", Map.of()).path("current");
         assertThat(started.path("problemIds").size()).isEqualTo(3);
+        JsonNode active = getJson(session, "/api/state");
+        JsonNode activePlan = send(session, "POST", "/api/plan/generate",
+                Map.of("revision", active.path("revision").asLong())).path("workspace").path("plan");
+        assertThat(activePlan.path("tasks")).isNotEmpty();
+        for (JsonNode reserved : started.path("problemIds")) {
+            assertThat(activePlan.path("tasks").toString()).doesNotContain(reserved.asText());
+        }
         String base = "/api/assessment/" + started.path("id").asText();
         mvc.perform(post(base + "/settle").session(session)).andExpect(status().isConflict());
         var snapshot = store.snapshot(userId);
@@ -298,6 +306,7 @@ class CoachFlowTest {
         JsonNode plan = send(session, "POST", "/api/plan/generate", Map.of("revision", updated.path("revision").asLong()))
                 .path("workspace").path("plan");
         assertThat(plan.path("basis").toString()).contains("最近限时短测中");
+        assertThat(plan.path("tasks").toString()).doesNotContain(first, second, third);
         assertThat(plan.path("tasks").toString()).contains("安排一道不同题目复核");
         JsonNode reflected = send(session, "PUT", base + "/reflection", Map.of("note", " 卡在边界调试 "));
         assertThat(reflected.path("current").path("reflection").asText()).isEqualTo("卡在边界调试");

@@ -53,8 +53,7 @@ public class AssessmentService {
         if (workspace.profile.handle.isBlank() || !workspace.profile.handle.equalsIgnoreCase(workspace.sync.handle)
                 || workspace.sync.syncedAt == null) throw conflict("请先关联并同步 Codeforces 账号");
         Set<String> seen = store.attempted(userId, workspace.profile.handle);
-        workspace.assessmentHistory.forEach(test -> seen.addAll(test.problemIds));
-        if (workspace.assessment != null) seen.addAll(workspace.assessment.problemIds);
+        if (workspace.plan != null) workspace.plan.tasks.forEach(task -> seen.add(task.problemId));
         List<String> candidates = planner.candidates(userId, workspace).stream()
                 .filter(p -> "CF".equals(p.platform) && !seen.contains(p.id))
                 .sorted(Comparator.comparingInt((Problem p) -> Math.abs(Objects.requireNonNullElse(p.rating, 0) - workspace.profile.level))
@@ -72,6 +71,7 @@ public class AssessmentService {
         assessment.deadline = assessment.startedAt + 3600;
         assessment.problemIds = candidates;
         workspace.assessment = assessment;
+        workspace.proposal = null;
         store.save(userId, snapshot.revision(), workspace);
         return new State(assessment, workspace.assessmentHistory, now());
     }

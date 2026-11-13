@@ -16,6 +16,8 @@ public class Planner {
 
     public List<Problem> candidates(long userId, Workspace workspace) {
         Set<String> excluded = store.excluded(userId, workspace);
+        if (workspace.assessment != null) excluded.addAll(workspace.assessment.problemIds);
+        workspace.assessmentHistory.forEach(test -> excluded.addAll(test.problemIds));
         return store.problems().stream()
                 .filter(problem -> !excluded.contains(problem.id))
                 .filter(problem -> problem.tags.stream().anyMatch(workspace.profile.topics::contains))
@@ -63,7 +65,6 @@ public class Planner {
                 .map(feedback -> catalog.get(feedback.problemId))
                 .map(problem -> problem.tags.isEmpty() ? "" : problem.tags.get(0)).orElse("");
         List<Problem> available = new ArrayList<>(candidates(userId, workspace));
-        if (!assessmentFocus.isEmpty()) available.removeIf(problem -> assessment.problemIds.contains(problem.id));
         available.sort(Comparator.comparingInt((Problem problem) -> problem.tags.contains(focus) ? 0 : 1)
                 .thenComparingInt(problem -> problem.minutes));
         int firstDay = today.getDayOfWeek().getValue() - 1;
