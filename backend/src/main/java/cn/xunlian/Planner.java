@@ -101,7 +101,13 @@ public class Planner {
                 ? "本周剩余时段没有能容纳的候选题。可以增加可用时间、调整专题或同步更多题目。"
                 : "已保留有训练记录的任务，按本周剩余时段安排 " + added + " 道新题。" + (focus.isEmpty() ? "" : "优先巩固近期需要帮助的" + focus + "专题。");
         plan.basis = new ArrayList<>(memory.stream().limit(2).toList());
-        if (usedAssessment) plan.basis.add(0, "最近限时短测中，" + assessmentFocus + "有提交但未通过");
+        if (usedAssessment) {
+            plan.basis.add(0, "最近限时短测中，" + assessmentFocus + "有提交但未通过");
+            String reflection = Objects.toString(assessment.reflection, "").strip();
+            if (!reflection.isEmpty()) {
+                plan.basis.add(1, "学员自述的短测卡点：" + reflection.substring(0, Math.min(160, reflection.length())));
+            }
+        }
         return plan;
     }
 

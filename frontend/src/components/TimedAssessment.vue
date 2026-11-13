@@ -102,9 +102,18 @@ onUnmounted(() => clearInterval(timer))
       @click="update('/assessment/' + current.id + '/cancel', 'POST')">放弃本场</button>
     <details v-if="state?.history.length">
       <summary>历次短测</summary>
-      <p v-for="test in state.history" :key="test.id">
+      <details v-for="test in state.history" :key="test.id" class="assessment-history">
+        <summary>
         {{ new Date(test.startedAt * 1000).toLocaleDateString() }} · {{ test.cancelled ? '已放弃' : test.results.filter(r => r.status === 'accepted').length + '/3 道通过' }}
-      </p>
+        </summary>
+        <ul v-if="test.results.length">
+          <li v-for="result in test.results" :key="result.problemId">
+            {{ problems[result.problemId]?.code ?? result.problemId }} · {{ labels[result.status] }}
+            <template v-if="result.firstAcceptedSeconds !== null"> · {{ duration(result.firstAcceptedSeconds) }}</template>
+          </li>
+        </ul>
+        <p v-if="test.reflection">本场复盘：{{ test.reflection }}</p>
+      </details>
     </details>
   </section>
 </template>
