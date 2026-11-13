@@ -84,7 +84,7 @@ let polling = false
 let previousFocus: HTMLElement | null = null
 const modal = ref<'feedback' | 'adjust' | 'auth' | null>(null)
 const activeTask = ref<Task | null>(null)
-const feedback = ref({ outcome: 'independent', minutes: 40, note: '' })
+const feedback = ref({ outcome: 'independent', minutes: 40, note: '', editorialNotes: '', mistakeNote: '' })
 const instruction = ref('针对最近参考题解才完成的题，再安排一次独立练习。')
 const authMode = ref<'login' | 'register'>('register')
 const credentials = ref({ username: '', password: '' })
@@ -332,8 +332,9 @@ function openFeedback(task: Task) {
     (item) => item.taskId === task.id && item.problemId === task.problemId,
   )
   feedback.value = previous
-    ? { outcome: previous.outcome, minutes: previous.minutes, note: previous.note }
-    : { outcome: 'independent', minutes: task.minutes, note: '' }
+    ? { outcome: previous.outcome, minutes: previous.minutes, note: previous.note,
+        editorialNotes: previous.editorialNotes ?? '', mistakeNote: previous.mistakeNote ?? '' }
+    : { outcome: 'independent', minutes: task.minutes, note: '', editorialNotes: '', mistakeNote: '' }
   modal.value = 'feedback'
 }
 function saveFeedback() {
@@ -866,6 +867,15 @@ onUnmounted(() => {
           <p v-if="workspace?.profile.competitionDate" class="notice">
             <Target :size="16" />目标比赛日期 {{ workspace.profile.competitionDate }}
           </p>
+          <section v-if="plan?.basis?.some(item => item.startsWith('训练前检查'))" class="notice">
+            <div><strong>训练前检查</strong>
+              <ul class="basis-list">
+                <li v-for="item in plan.basis.filter(item => item.startsWith('训练前检查'))" :key="item">
+                  {{ item.replace('训练前检查 · ', '') }}
+                </li>
+              </ul>
+            </div>
+          </section>
           <TimedAssessment v-if="!state.demo" :key="state.username" :problems="problemMap" :sync-job="syncJob" @sync="synchronize" />
           <div class="page-heading">
             <div>
@@ -1396,7 +1406,12 @@ onUnmounted(() => {
                 maxlength="1500"
                 placeholder="例如：二分方向能判断，但左右边界还需要再练习。"
               /></label
-            ><button class="button primary full-width" :disabled="!!busy" type="submit">
+            >
+            <label>本次实际失误<textarea v-model="feedback.mistakeNote" rows="2" maxlength="400"
+              placeholder="例如：多组测试忘了清空数组。没有失误可以留空。" /></label>
+            <label>题解要点（选填）<textarea v-model="feedback.editorialNotes" rows="2" maxlength="1200"
+              placeholder="题目标签太宽时，可粘贴题解里的算法名称或做法。" /></label>
+            <button class="button primary full-width" :disabled="!!busy" type="submit">
               {{ busy === 'feedback' ? '正在保存' : '保存这次复盘' }}<Check :size="16" />
             </button></form
         ></template>

@@ -179,6 +179,11 @@ public class CoachController {
         feedback.outcome = body.outcome();
         feedback.minutes = body.minutes();
         feedback.note = body.note().trim();
+        feedback.editorialNotes = Objects.toString(body.editorialNotes(), "").strip();
+        feedback.mistakeNote = body.mistakeNote() == null ? null : body.mistakeNote().strip();
+        if (feedback.editorialNotes.length() > 1200 || (feedback.mistakeNote != null && feedback.mistakeNote.length() > 400)) {
+            bad("题解要点最多 1200 字，本次失误最多 400 字");
+        }
         feedback.createdAt = Instant.now().toString();
         workspace.feedback.removeIf(item -> item.taskId.equals(task.id) && item.problemId.equals(task.problemId));
         workspace.feedback.add(feedback);
@@ -287,6 +292,8 @@ public class CoachController {
             model.codeforcesCoverage = modeler.platformCoverage(problems, attempted, accepted);
             model.codeforcesCoverageTruncated = workspace.sync.truncated;
         }
+        model.skillGroups = AbilityDetails.details(problems, workspace.feedback, accepted);
+        model.recurringMistakes = AbilityDetails.mistakes(workspace.feedback);
         model.abilityAreas = modeler.abilityAreas(workspace, problems, attempted, accepted);
         return model;
     }

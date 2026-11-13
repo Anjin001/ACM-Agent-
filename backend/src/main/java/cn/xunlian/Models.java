@@ -59,6 +59,8 @@ public final class Models {
         public String outcome;
         public int minutes;
         public String note;
+        public String editorialNotes;
+        public String mistakeNote;
         public String createdAt;
         /** 由复盘文字抽取出的错因标签，用于画像与记忆。 */
         public List<String> causes = new ArrayList<>();
@@ -168,6 +170,8 @@ public final class Models {
                               int independent, int codeforcesAttempted, int codeforcesAccepted) {}
 
     public static class ProfileModel {
+        public List<AbilityDetails.Group> skillGroups = new ArrayList<>();
+        public List<AbilityDetails.Mistake> recurringMistakes = new ArrayList<>();
         public List<AbilityArea> abilityAreas = new ArrayList<>();
         public List<PlatformCoverage> codeforcesCoverage = new ArrayList<>();
         public boolean codeforcesCoverageTruncated;
@@ -236,7 +240,7 @@ public final class Models {
     public record Credentials(String username, String password) {}
     public record ProfileRequest(long revision, Profile profile) {}
     public record RevisionRequest(long revision) {}
-    public record FeedbackRequest(long revision, String taskId, String outcome, int minutes, String note) {}
+    public record FeedbackRequest(long revision, String taskId, String outcome, int minutes, String note, String editorialNotes, String mistakeNote) {}
     public record AdjustRequest(long revision, String instruction) {}
     public record AcceptRequest(long revision, String proposalId) {}
     public record Submission(long id, String problemId, String verdict, long createdAt) {}

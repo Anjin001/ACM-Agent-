@@ -388,6 +388,43 @@ class CoachFlowTest {
     }
 
     @Test
+    void skillsAndMistakesTrackEvidenceAcrossPracticePeriods() throws Exception {
+        MockHttpSession session = register();
+        JsonNode initial = getJson(session, "/api/state");
+        long id = store.accountByName(initial.path("username").asText()).id();
+        var snapshot = store.snapshot(id);
+        for (int days : List.of(40, 2)) {
+            Models.Feedback row = new Models.Feedback();
+            row.problemId = "LG-P3375";
+            row.outcome = days == 40 ? "editorial" : "independent";
+            row.createdAt = java.time.Instant.now().minusSeconds(days * 86400L).toString();
+            row.mistakeNote = "忘记初始化";
+            snapshot.workspace().feedback.add(row);
+        }
+        Models.Feedback untagged = new Models.Feedback();
+        untagged.problemId = "CF-2148-B";
+        untagged.outcome = "editorial";
+        untagged.editorialNotes = "用前缀和预处理";
+        untagged.createdAt = java.time.Instant.now().toString();
+        snapshot.workspace().feedback.add(untagged);
+        store.save(id, snapshot.revision(), snapshot.workspace());
+
+        JsonNode result = getJson(session, "/api/profile/model");
+        JsonNode kmp = result.path("skillGroups").path(6).path("skills").path(0);
+        assertThat(kmp.path("recentIndependent").asInt()).isEqualTo(1);
+        assertThat(kmp.path("previous").asInt()).isEqualTo(1);
+        assertThat(kmp.path("previousIndependent").asInt()).isZero();
+        assertThat(result.path("skillGroups").toString()).contains("含题解关键词推断");
+        JsonNode mistake = result.path("recurringMistakes").path(0);
+        assertThat(mistake.path("name").asText()).isEqualTo("初始化与状态清理");
+        assertThat(mistake.path("count").asInt()).isEqualTo(2);
+        JsonNode active = getJson(session, "/api/state");
+        JsonNode plan = send(session, "POST", "/api/plan/generate", Map.of("revision", active.path("revision").asLong()))
+                .path("workspace").path("plan");
+        assertThat(plan.path("basis").toString()).contains("训练前检查", "初始化与状态清理");
+    }
+
+    @Test
     void syncMergesWindowsAndRefreshesRejudgedVerdicts() throws Exception {
         MockHttpSession session = register();
         JsonNode initial = state(session);

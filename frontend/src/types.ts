@@ -47,6 +47,8 @@ export interface Feedback {
   note: string
   createdAt: string
   causes?: string[]
+  editorialNotes?: string
+  mistakeNote?: string
 }
 export interface Proposal {
   id: string
@@ -160,6 +162,8 @@ export interface AbilityArea {
 
 export interface ProfileModel {
   abilityAreas: AbilityArea[]
+  skillGroups: { name: string; skills: { name: string; recent: number; recentIndependent: number; previous: number; previousIndependent: number; accepted: number; source: string }[] }[]
+  recurringMistakes: { name: string; count: number; lastProblem: string; lastNote: string; reminder: string }[]
   codeforcesCoverage: { topic: string; attempted: number; accepted: number }[]
   codeforcesCoverageTruncated: boolean
   timedEvidence: { problemId: string; title: string; status: string; submissions: number; firstAcceptedSeconds: number | null; assessedAt: number }[]
