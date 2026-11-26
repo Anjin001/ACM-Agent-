@@ -29,6 +29,8 @@ public class CoachStore {
     private final ObjectMapper json;
     private final TransactionTemplate tx;
     private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder();
+    private volatile List<Problem> catalog = List.of();
+    private volatile Map<String, Problem> catalogById = Map.of();
 
     public CoachStore(JdbcTemplate db, ObjectMapper json, TransactionTemplate tx) {
         this.db = db;
@@ -88,14 +90,63 @@ public class CoachStore {
     public synchronized void saveProblems(List<Problem> problems) {
         Set<String> known = new HashSet<>(db.queryForList("SELECT id FROM problems", String.class));
         List<Problem> fresh = problems.stream().filter(problem -> !known.contains(problem.id)).toList();
-        db.batchUpdate("INSERT INTO problems(id,payload) VALUES(?,?)", fresh, 500, (ps, problem) -> {
-            ps.setString(1, problem.id);
-            ps.setString(2, encode(problem));
+        List<Problem> existing = problems.stream().filter(problem -> known.contains(problem.id)).toList();
+        tx.executeWithoutResult(status -> {
+            db.batchUpdate("INSERT INTO problems(id,payload) VALUES(?,?)", fresh, 500, (ps, problem) -> {
+                ps.setString(1, problem.id);
+                ps.setString(2, encode(problem));
+            });
+            db.batchUpdate("UPDATE problems SET payload=? WHERE id=?", existing, 500, (ps, problem) -> {
+                ps.setString(1, encode(problem));
+                ps.setString(2, problem.id);
+            });
         });
+        List<Problem> loaded = db.query("SELECT payload FROM problems ORDER BY id", (rs, row) -> decode(rs.getString(1), Problem.class));
+        Map<String, Problem> byId = new LinkedHashMap<>();
+        loaded.forEach(problem -> byId.put(problem.id, problem));
+        catalogById = Collections.unmodifiableMap(byId);
+        catalog = List.copyOf(loaded);
     }
 
     public List<Problem> problems() {
-        return db.query("SELECT payload FROM problems", (rs, row) -> decode(rs.getString(1), Problem.class));
+        return catalog;
+    }
+
+    public Problem problem(String id) { return catalogById.get(id); }
+
+    public List<Problem> referencedProblems(Workspace workspace) {
+        Set<String> ids = new LinkedHashSet<>();
+        if (workspace.plan != null) workspace.plan.tasks.forEach(task -> ids.add(task.problemId));
+        if (workspace.proposal != null) workspace.proposal.plan.tasks.forEach(task -> ids.add(task.problemId));
+        workspace.history.forEach(plan -> plan.tasks.forEach(task -> ids.add(task.problemId)));
+        workspace.feedback.forEach(feedback -> ids.add(feedback.problemId));
+        return ids.stream().map(catalogById::get).filter(Objects::nonNull).toList();
+    }
+
+    public long latestSubmission(long userId, String handle) {
+        Long latest = db.queryForObject("SELECT MAX(submission_id) FROM cf_submissions WHERE user_id=? AND LOWER(handle)=LOWER(?)", Long.class, userId, handle);
+        return latest == null ? 0 : latest;
+    }
+
+    public Set<String> attempted(long userId, String handle) {
+        return new HashSet<>(db.queryForList("SELECT DISTINCT problem_id FROM cf_submissions WHERE user_id=? AND LOWER(handle)=LOWER(?)", String.class, userId, handle));
+    }
+
+    public Map<String, long[]> acceptedStats(long userId, String handle) {
+        Map<String, long[]> result = new HashMap<>();
+        db.query("SELECT problem_id,MIN(submitted_at) AS first_ac,MAX(submitted_at) AS last_ac,COUNT(*) AS ac_count FROM cf_submissions WHERE user_id=? AND LOWER(handle)=LOWER(?) AND verdict='OK' GROUP BY problem_id", rs -> {
+            result.put(rs.getString("problem_id"), new long[]{rs.getLong("first_ac"), rs.getLong("last_ac"), rs.getLong("ac_count")});
+        }, userId, handle);
+        return result;
+    }
+
+    public void alignSyncedTasks(long userId, Workspace workspace) {
+        Set<String> accepted = solved(userId, workspace.profile.handle);
+        if (workspace.plan == null) return;
+        for (Task task : workspace.plan.tasks) {
+            if (task.status.equals("todo") && accepted.contains(task.problemId)) task.status = "synced";
+            else if (task.status.equals("synced") && !accepted.contains(task.problemId)) task.status = "todo";
+        }
     }
 
     public Set<String> solved(long userId, String handle) {
@@ -131,12 +182,7 @@ public class CoachStore {
             workspace.sync = info;
             Set<String> solved = solved(userId, handle);
             info.solvedCount = solved.size();
-            if (workspace.plan != null) {
-                for (Task task : workspace.plan.tasks) {
-                    if (task.status.equals("todo") && solved.contains(task.problemId)) task.status = "synced";
-                    else if (task.status.equals("synced") && !solved.contains(task.problemId)) task.status = "todo";
-                }
-            }
+            alignSyncedTasks(userId, workspace);
             workspace.proposal = null;
             save(userId, snapshot.revision(), workspace);
         });

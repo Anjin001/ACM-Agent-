@@ -31,30 +31,28 @@ import {
   Download,
 } from 'lucide-vue-next'
 import TaskList from './components/TaskList.vue'
+import ProblemLibrary from './components/ProblemLibrary.vue'
+import TopicsPage from './components/TopicsPage.vue'
+import CfSyncPage from './components/CfSyncPage.vue'
+import TopicPicker from './components/TopicPicker.vue'
+import LearningPage from './components/LearningPage.vue'
 import { api, ApiError } from './api'
 import type { AppState, Profile, Task, SyncJob, Problem } from './types'
 
-type Page = 'dashboard' | 'plan' | 'library' | 'review' | 'settings'
+type Page = 'dashboard' | 'plan' | 'library' | 'review' | 'settings' | 'topics' | 'cf' | 'learn'
 const navigation = [
   { id: 'dashboard' as Page, label: '训练概览', icon: LayoutDashboard },
   { id: 'plan' as Page, label: '周训练计划', icon: CalendarDays },
-  { id: 'library' as Page, label: '精选题库', icon: Library },
+  { id: 'learn' as Page, label: '诊断与验证', icon: Target },
+  { id: 'topics' as Page, label: '专题与路线', icon: BookOpen },
+  { id: 'library' as Page, label: '训练题库', icon: Library },
+  { id: 'cf' as Page, label: 'CF 已做题', icon: Link2 },
   { id: 'review' as Page, label: '训练复盘', icon: NotebookPen },
-]
-const topics = [
-  '二分',
-  '搜索',
-  '动态规划',
-  '贪心',
-  '图论',
-  '数学',
-  '字符串',
-  '数据结构',
-  '双指针',
-  '模拟',
 ]
 const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 const state = ref<AppState | null>(null)
+const topics = computed(() => state.value?.topics || [])
+const libraryTopic = ref('all')
 const page = ref<Page>(readPage())
 const sidebarOpen = ref(false)
 const busy = ref('')
@@ -72,10 +70,6 @@ const authMode = ref<'login' | 'register'>('register')
 const credentials = ref({ username: '', password: '' })
 const draft = ref<Profile | null>(null)
 const selectedDay = ref(-1)
-const query = ref('')
-const platform = ref('all')
-const topic = ref('all')
-const libraryPage = ref(1)
 const workspace = computed(() => state.value?.workspace)
 const plan = computed(() => workspace.value?.plan)
 const tasks = computed(() => plan.value?.tasks || [])
@@ -92,6 +86,19 @@ const problemMap = computed(
     ) as Record<string, Problem>,
 )
 const todayIndex = (new Date().getDay() + 6) % 7
+const currentPlanWeek = computed(() => {
+  if (!plan.value) return true
+  const monday = new Date()
+  monday.setDate(monday.getDate() - todayIndex)
+  return (
+    plan.value.weekStart ===
+    [
+      monday.getFullYear(),
+      String(monday.getMonth() + 1).padStart(2, '0'),
+      String(monday.getDate()).padStart(2, '0'),
+    ].join('-')
+  )
+})
 const nextTask = computed(
   () =>
     tasks.value.find((task) => task.status === 'todo' && task.day >= todayIndex) ||
@@ -110,26 +117,19 @@ const budget = computed(() =>
     : workspace.value?.profile.dailyMinutes || []
   ).reduce((sum, minutes) => sum + minutes, 0),
 )
-const syncJob = ref<SyncJob>({ status: 'idle', message: '尚未同步' })
+const syncJob = ref<SyncJob>({
+  status: 'idle',
+  message: '尚未同步',
+  handle: '',
+  mode: 'full',
+  pages: 0,
+  readCount: 0,
+})
 const visibleTasks = computed(() =>
   selectedDay.value < 0
     ? tasks.value
     : tasks.value.filter((task) => task.day === selectedDay.value),
 )
-const filteredProblems = computed(() =>
-  (state.value?.problems || []).filter(
-    (problem) =>
-      (platform.value === 'all' || problem.platform === platform.value) &&
-      (topic.value === 'all' || problem.tags.includes(topic.value)) &&
-      `${problem.title} ${problem.code} ${problem.tags.join(' ')}`
-        .toLowerCase()
-        .includes(query.value.trim().toLowerCase()),
-  ),
-)
-const pagedProblems = computed(() =>
-  filteredProblems.value.slice((libraryPage.value - 1) * 12, libraryPage.value * 12),
-)
-const pageCount = computed(() => Math.max(1, Math.ceil(filteredProblems.value.length / 12)))
 const recentFeedback = computed(() => [...(workspace.value?.feedback || [])].reverse())
 const topicStats = computed(() =>
   (workspace.value?.profile.topics || []).map((name) => {
@@ -156,7 +156,9 @@ const activePageTitle = computed(
 
 function readPage(): Page {
   const hash = location.hash.replace('#', '')
-  return ['dashboard', 'plan', 'library', 'review', 'settings'].includes(hash)
+  return ['dashboard', 'plan', 'library', 'review', 'settings', 'topics', 'cf', 'learn'].includes(
+    hash,
+  )
     ? (hash as Page)
     : 'dashboard'
 }
@@ -169,9 +171,6 @@ function navigate(value: Page) {
 function handleHash() {
   page.value = readPage()
 }
-watch([query, platform, topic], () => {
-  libraryPage.value = 1
-})
 watch(modal, async (value, oldValue) => {
   if (value && !oldValue) previousFocus = document.activeElement as HTMLElement
   document.body.style.overflow = value ? 'hidden' : ''
@@ -294,35 +293,65 @@ function saveProfile() {
     notify('个人设置已保存，可重新生成计划')
   })
 }
-function toggleTopic(name: string) {
-  if (!draft.value) return
-  draft.value.topics = draft.value.topics.includes(name)
-    ? draft.value.topics.filter((item) => item !== name)
-    : [...draft.value.topics, name]
-}
 function synchronize() {
+  syncCf('incremental')
+}
+function syncCf(mode: string) {
   if (!workspace.value?.profile.handle) {
-    navigate('settings')
-    notify('填写并保存 CF handle 后，即可同步真实做题记录')
+    navigate('cf')
+    notify('填写 CF handle 后即可同步已通过题目')
     return
   }
   act('sync', async () => {
-    syncJob.value = await api<SyncJob>('/sync', 'POST')
+    syncJob.value = await api<SyncJob>('/sync', 'POST', { mode })
   })
 }
+function connectCf(handle: string) {
+  act('sync', async () => {
+    const profile = { ...workspace.value!.profile, handle }
+    adopt(await api<AppState>('/profile', 'PUT', { revision: state.value!.revision, profile }))
+    syncJob.value = await api<SyncJob>('/sync', 'POST', { mode: 'incremental' })
+  })
+}
+function cancelCf() {
+  act('cancel', async () => {
+    syncJob.value = await api<SyncJob>('/sync/cancel', 'POST')
+    if (syncJob.value.status === 'success') adopt(await api<AppState>('/state'))
+  })
+}
+function setTopics(names: string[]) {
+  act('topics', async () => {
+    const profile = { ...workspace.value!.profile, topics: [...new Set(names)] }
+    adopt(await api<AppState>('/profile', 'PUT', { revision: state.value!.revision, profile }))
+    notify('训练方向已保存，可在周计划中生成新的安排')
+  })
+}
+function adoptLearning(value: AppState) {
+  if (value.username === state.value?.username) adopt(value)
+}
+function addTopic(name: string) {
+  setTopics([...workspace.value!.profile.topics, name])
+}
+function browseTopic(name: string) {
+  libraryTopic.value = name
+  navigate('library')
+}
 async function pollSync() {
+  const username = state.value?.username
+  const handle = workspace.value?.profile.handle
   if (syncJob.value.status !== 'running' || polling) return
   polling = true
   try {
     const job = await api<SyncJob>('/sync')
+    if (state.value?.username !== username || workspace.value?.profile.handle !== handle) return
     syncJob.value = job
     if (job.status !== 'running') {
       const value = await api<AppState>('/state')
-      adopt(value, page.value !== 'settings')
+      if (value.username === state.value?.username) adopt(value, page.value !== 'settings')
       notify(job.message, job.status === 'error')
     }
   } catch {
-    syncJob.value = { status: 'error', message: '同步状态获取失败，请刷新后重试' }
+    syncJob.value = { ...syncJob.value, status: 'error', message: '同步状态获取失败，请刷新后重试' }
     notify(syncJob.value.message, true)
   } finally {
     polling = false
@@ -432,7 +461,7 @@ onUnmounted(() => {
     <aside class="sidebar" :class="{ open: sidebarOpen }">
       <a href="#dashboard" class="brand" @click.prevent="navigate('dashboard')"
         ><span class="brand-mark"><ChevronsLeftRight :size="25" /></span
-        ><span class="brand-name">循练<span>ACM 训练工作台</span></span></a
+        ><span class="brand-name">循练<span>编程与算法成长</span></span></a
       >
       <div class="space-label">
         <span class="space-dot" />{{ state.demo ? '课程演示空间' : '我的训练空间' }}
@@ -475,8 +504,7 @@ onUnmounted(() => {
           <Settings2 :size="19" />个人设置
         </button>
         <button class="account" @click="modal = 'auth'">
-          <span class="avatar">{{ workspace!.profile.name.slice(0, 1) }}</span
-          ><span
+          <span class="avatar">{{ workspace!.profile.name.slice(0, 1) }}</span><span
             ><strong>{{ workspace!.profile.name }}</strong
             ><small>{{ state.demo ? '示例数据 · 可切换账号' : state.username }}</small></span
           ><ChevronRight :size="16" />
@@ -498,10 +526,10 @@ onUnmounted(() => {
               day: 'numeric',
               weekday: 'long',
             }).format(new Date())
-          }}</span
-          ><button class="connection-pill" @click="navigate('settings')">
+          }}</span><button class="connection-pill" @click="navigate('settings')">
             <span class="live-dot" />{{
-              workspace!.sync.syncedAt && workspace!.sync.handle === workspace!.profile.handle
+              workspace!.sync.syncedAt &&
+              workspace!.sync.handle.toLowerCase() === workspace!.profile.handle.toLowerCase()
                 ? 'CF 已连接'
                 : '连接 CF 账号'
             }}</button
@@ -541,6 +569,15 @@ onUnmounted(() => {
               syncJob.message
             }}
           </div>
+          <div v-if="plan && !currentPlanWeek" class="notice">
+            当前展示的是 {{ weekLabel }} 的计划。<button
+              class="text-button"
+              :disabled="!!busy"
+              @click="generate"
+            >
+              生成本周安排
+            </button>
+          </div>
           <section class="overview-grid">
             <div class="week-hero">
               <div class="hero-copy">
@@ -556,7 +593,7 @@ onUnmounted(() => {
                   <span
                     ><strong>{{ completed.length }}</strong
                     ><em>/ {{ tasks.length }}</em></span
-                  ><small>本周已完成</small>
+                  ><small>计划已完成</small>
                 </div>
               </div>
               <div class="hero-footer">
@@ -598,7 +635,7 @@ onUnmounted(() => {
             <div>
               <span class="metric-icon blue"><CheckCircle2 :size="20" /></span
               ><span
-                ><small>本周完成</small
+                ><small>当前计划完成</small
                 ><strong
                   >{{ completed.length }}<em> / {{ tasks.length }} 题</em></strong
                 ></span
@@ -623,7 +660,7 @@ onUnmounted(() => {
                 ><small>CF 已同步通过</small
                 ><strong
                   >{{
-                    workspace!.sync.handle === workspace!.profile.handle
+                    workspace!.sync.handle.toLowerCase() === workspace!.profile.handle.toLowerCase()
                       ? workspace!.sync.solvedCount
                       : 0
                   }}<em> 题</em></strong
@@ -646,11 +683,15 @@ onUnmounted(() => {
                     v-for="(day, index) in weekdays"
                     :key="day"
                     class="day-cell"
-                    :class="{ today: index === todayIndex, selected: selectedDay === index }"
+                    :class="{
+                      today: index === todayIndex && currentPlanWeek,
+                      selected: selectedDay === index,
+                    }"
                     @click="selectedDay = selectedDay === index ? -1 : index"
                   >
-                    <span>{{ index === todayIndex ? '今天' : day }}</span
-                    ><strong>{{ dayDate(index).getDate() }}</strong>
+                    <span>{{
+                      index === todayIndex && currentPlanWeek ? '今天' : day
+                    }}</span><strong>{{ dayDate(index).getDate() }}</strong>
                     <div class="day-marks">
                       <i
                         v-for="task in tasks.filter((item) => item.day === index)"
@@ -692,8 +733,7 @@ onUnmounted(() => {
                   ><div class="next-problem-meta">
                     <span class="platform-badge" :class="nextProblem.platform">{{
                       nextProblem.platform === 'LG' ? '洛谷' : 'CF'
-                    }}</span
-                    ><span>{{ nextProblem.code }}</span
+                    }}</span><span>{{ nextProblem.code }}</span
                     ><span>{{ nextProblem.difficulty }}</span>
                   </div>
                   <h2>{{ nextProblem.title }}</h2>
@@ -720,8 +760,9 @@ onUnmounted(() => {
                 </div>
                 <div v-for="item in topicStats" :key="item.name" class="topic-stat">
                   <div>
-                    <span>{{ item.name }}</span
-                    ><small>{{ item.independent }} 独立 / {{ item.attempted }} 次练习</small>
+                    <span>{{ item.name }}</span><small
+                      >{{ item.independent }} 独立 / {{ item.attempted }} 次练习</small
+                    >
                   </div>
                   <div class="topic-track">
                     <i
@@ -782,7 +823,7 @@ onUnmounted(() => {
               v-for="(day, index) in weekdays"
               :key="day"
               class="panel plan-day"
-              :class="{ 'is-today': index === todayIndex }"
+              :class="{ 'is-today': index === todayIndex && currentPlanWeek }"
             >
               <div class="plan-day-heading">
                 <div>
@@ -790,7 +831,7 @@ onUnmounted(() => {
                   <h2>
                     {{ dayDate(index).getMonth() + 1 }}.{{
                       String(dayDate(index).getDate()).padStart(2, '0')
-                    }}<small v-if="index === todayIndex">今天</small>
+                    }}<small v-if="index === todayIndex && currentPlanWeek">今天</small>
                   </h2>
                 </div>
                 <span
@@ -820,116 +861,47 @@ onUnmounted(() => {
         <template v-if="page === 'library'">
           <div class="page-heading">
             <div>
-              <h1>为每一步，找到合适的题。</h1>
-              <p>{{ state.problems.length }} 道精选题目，保留来源与原平台难度。</p>
+              <h1>找到适合下一步的题目。</h1>
+              <p>
+                {{ state.catalogTotal.toLocaleString() }} 道题目，支持专题、难度与完成状态筛选。
+              </p>
             </div>
-            <span class="quiet-badge">CF 公开快照 + 洛谷人工精选</span>
+            <button class="button outline" @click="navigate('cf')">
+              <RefreshCw :size="15" />同步 CF 已做题
+            </button>
           </div>
-          <section class="panel library-panel">
-            <div class="library-filters">
-              <label class="search-box"
-                ><Search :size="18" /><input
-                  v-model="query"
-                  placeholder="搜索题号、题目或专题"
-                  aria-label="搜索题目" /></label
-              ><label class="select-box"
-                ><SlidersHorizontal :size="15" /><select v-model="platform" aria-label="筛选平台">
-                  <option value="all">全部平台</option>
-                  <option value="CF">Codeforces</option>
-                  <option value="LG">洛谷</option>
-                </select></label
-              ><select v-model="topic" aria-label="筛选专题">
-                <option value="all">全部专题</option>
-                <option v-for="item in topics" :key="item">{{ item }}</option>
-              </select>
-            </div>
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>题目</th>
-                    <th>算法专题</th>
-                    <th>原平台难度</th>
-                    <th>参考用时</th>
-                    <th>状态</th>
-                    <th><span class="sr-only">查看原题</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="problem in pagedProblems" :key="problem.id">
-                    <td>
-                      <div class="problem-name">
-                        <span class="platform-badge" :class="problem.platform">{{
-                          problem.platform === 'LG' ? '洛谷' : 'CF'
-                        }}</span
-                        ><a :href="problem.url" target="_blank" rel="noopener noreferrer"
-                          ><small>{{ problem.code }}</small
-                          ><strong>{{ problem.title }}</strong></a
-                        >
-                      </div>
-                    </td>
-                    <td>
-                      <div class="tag-list">
-                        <span v-for="tag in problem.tags.slice(0, 2)" :key="tag" class="tag">{{
-                          tag
-                        }}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <span
-                        class="rating"
-                        :class="{ beginner: !problem.rating || problem.rating <= 1000 }"
-                        >{{ problem.difficulty }}</span
-                      >
-                    </td>
-                    <td class="muted">{{ problem.minutes }} 分钟</td>
-                    <td>
-                      <span v-if="state.solvedIds.includes(problem.id)" class="solved-text"
-                        ><Check :size="14" />已完成</span
-                      ><span v-else class="muted">待探索</span>
-                    </td>
-                    <td>
-                      <a
-                        class="icon-button"
-                        :href="problem.url"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        :aria-label="`打开 ${problem.title}`"
-                        ><ArrowUpRight :size="17"
-                      /></a>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <div v-if="!filteredProblems.length" class="empty-state">
-                没有找到匹配的题目，可以换个关键词或专题。
-              </div>
-            </div>
-            <div class="pagination">
-              <span>共 {{ filteredProblems.length }} 道题目</span>
-              <div>
-                <button
-                  class="icon-button"
-                  aria-label="上一页"
-                  :disabled="libraryPage <= 1"
-                  @click="libraryPage--"
-                >
-                  <ChevronLeft :size="17" /></button
-                ><span>{{ libraryPage }} / {{ pageCount }}</span
-                ><button
-                  class="icon-button"
-                  aria-label="下一页"
-                  :disabled="libraryPage >= pageCount"
-                  @click="libraryPage++"
-                >
-                  <ChevronRight :size="17" />
-                </button>
-              </div>
-            </div>
-          </section>
-          <p class="below-note">预计用时用于排期。洛谷阶段标签由人工整理，题目详情以原平台为准。</p>
+          <ProblemLibrary
+            :topics="topics"
+            :revision="state.revision"
+            :initial-topic="libraryTopic"
+          />
+          <p class="below-note">
+            CF 题目来自官方题库快照。洛谷题目为人工精选，名称为训练主题，题目难度与内容以原题为准。
+          </p>
         </template>
-
+        <LearningPage
+          v-if="page === 'learn'"
+          :state="state"
+          @update="adoptLearning"
+          @route="setTopics"
+        />
+        <TopicsPage
+          v-if="page === 'topics'"
+          :state="state"
+          :busy="busy"
+          @add="addTopic"
+          @route="setTopics"
+          @browse="browseTopic"
+        />
+        <CfSyncPage
+          v-if="page === 'cf'"
+          :state="state"
+          :job="syncJob"
+          :busy="busy"
+          @connect="connectCf"
+          @sync="syncCf"
+          @cancel="cancelCf"
+        />
         <template v-if="page === 'review'">
           <div class="page-heading">
             <div>
@@ -968,8 +940,8 @@ onUnmounted(() => {
                   </div>
                   <p>{{ item.note || '这次记录了用时和完成情况。下次可以补充思路与卡点。' }}</p>
                   <div class="task-meta">
-                    <span>{{ problemMap[item.problemId]?.code }}</span
-                    ><span class="icon-text"><Clock3 :size="12" />{{ item.minutes }} 分钟</span
+                    <span>{{ problemMap[item.problemId]?.code }}</span><span class="icon-text"
+                      ><Clock3 :size="12" />{{ item.minutes }} 分钟</span
                     ><time>{{ formatDate(item.createdAt) }}</time>
                   </div>
                 </div>
@@ -981,8 +953,7 @@ onUnmounted(() => {
             <aside class="panel review-summary">
               <h2>这段训练留下了什么</h2>
               <div class="review-number">
-                <strong>{{ trainedMinutes }}</strong
-                ><span>分钟训练记录</span>
+                <strong>{{ trainedMinutes }}</strong><span>分钟训练记录</span>
               </div>
               <div class="summary-line">
                 <span>独立完成</span
@@ -1039,7 +1010,7 @@ onUnmounted(() => {
                   >训练起点 <span class="field-hint">CF 难度参考</span
                   ><select v-model.number="draft.level">
                     <option
-                      v-for="level in [800, 1000, 1200, 1400, 1600]"
+                      v-for="level in Array.from({ length: 28 }, (_, i) => 800 + i * 100)"
                       :key="level"
                       :value="level"
                     >
@@ -1048,18 +1019,7 @@ onUnmounted(() => {
                   </select></label
                 >
                 <div class="field-label">想练习的专题</div>
-                <div class="topic-options">
-                  <button
-                    v-for="name in topics"
-                    :key="name"
-                    type="button"
-                    :class="{ chosen: draft.topics.includes(name) }"
-                    :aria-pressed="draft.topics.includes(name)"
-                    @click="toggleTopic(name)"
-                  >
-                    <Check v-if="draft.topics.includes(name)" :size="13" />{{ name }}
-                  </button>
-                </div>
+                <TopicPicker v-model="draft.topics" :topics="topics" />
               </section>
               <section class="panel form-panel">
                 <h2>每周可用时间</h2>
@@ -1116,7 +1076,11 @@ onUnmounted(() => {
                     {{ workspace!.sync.solvedCount }} 道通过</strong
                   ><small
                     >{{ formatDate(workspace!.sync.syncedAt)
-                    }}{{ workspace!.sync.truncated ? ' · 最近 10000 条范围' : '' }}</small
+                    }}{{
+                      workspace!.sync.fullHistory
+                        ? ' · 完整历史已同步'
+                        : ' · 可到 CF 已做题页面完整同步'
+                    }}</small
                   >
                 </div>
               </section>
@@ -1279,8 +1243,9 @@ onUnmounted(() => {
                 )"
                 :key="task.id"
               >
-                <span>{{ weekdays[task.day] }}</span
-                ><strong>{{ problemMap[task.problemId]?.title }}</strong
+                <span>{{ weekdays[task.day] }}</span><strong>{{
+                  problemMap[task.problemId]?.title
+                }}</strong
                 ><small>{{ task.minutes }} 分钟</small>
               </li>
             </ul>

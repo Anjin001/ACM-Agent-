@@ -10,16 +10,19 @@ import static cn.xunlian.Models.*;
 @Service
 public class Planner {
     private final CoachStore store;
+    private final TopicService topics;
 
-    public Planner(CoachStore store) { this.store = store; }
+    public Planner(CoachStore store, TopicService topics) { this.store = store; this.topics = topics; }
 
     public List<Problem> candidates(long userId, Workspace workspace) {
         Set<String> excluded = store.excluded(userId, workspace);
         return store.problems().stream()
                 .filter(problem -> !excluded.contains(problem.id))
-                .filter(problem -> problem.tags.stream().anyMatch(workspace.profile.topics::contains))
-                .filter(problem -> problem.rating == null || (problem.rating >= workspace.profile.level - 200 && problem.rating <= workspace.profile.level + 200))
-                .sorted(Comparator.comparingInt((Problem problem) -> problem.minutes).thenComparing(problem -> problem.id))
+                .filter(problem -> workspace.profile.topics.stream().anyMatch(topic -> topics.matches(problem, topic)))
+                .filter(problem -> problem.platform.equals("LG")
+                        ? workspace.profile.level >= problem.minLevel && workspace.profile.level <= problem.maxLevel
+                        : problem.rating != null && problem.rating >= workspace.profile.level - 200 && problem.rating <= workspace.profile.level + 200)
+                .sorted(Comparator.comparingInt((Problem problem) -> problem.rating == null ? 150 : Math.abs(problem.rating - workspace.profile.level)).thenComparing(problem -> problem.id))
                 .toList();
     }
 
@@ -44,6 +47,7 @@ public class Planner {
                 .map(problem -> problem.tags.isEmpty() ? "" : problem.tags.get(0)).orElse("");
         List<Problem> available = new ArrayList<>(candidates(userId, workspace));
         available.sort(Comparator.comparingInt((Problem problem) -> problem.tags.contains(focus) ? 0 : 1)
+                .thenComparingInt(problem -> problem.rating == null ? 150 : Math.abs(problem.rating - workspace.profile.level))
                 .thenComparingInt(problem -> problem.minutes));
         int firstDay = today.getDayOfWeek().getValue() - 1;
         int added = 0;
@@ -60,7 +64,7 @@ public class Planner {
                 task.minutes = problem.minutes;
                 task.reason = problem.tags.contains(focus)
                         ? "针对最近参考题解或卡住的专题，再安排一次独立练习。"
-                        : "符合你选择的" + String.join("、", problem.tags.stream().filter(workspace.profile.topics::contains).toList()) + "专题，预计用时适合当天安排。";
+                        : "符合你选择的" + String.join("、", workspace.profile.topics.stream().filter(topic -> topics.matches(problem, topic)).toList()) + "专题，预计用时适合当天安排。";
                 plan.tasks.add(task);
                 used.add(problem.id);
                 remaining -= task.minutes;

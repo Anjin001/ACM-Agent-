@@ -13,14 +13,16 @@ import static cn.xunlian.Models.*;
 @RestController
 @RequestMapping("/api")
 public class CoachController {
-    private static final Set<String> TOPICS = Set.of("二分", "搜索", "动态规划", "贪心", "图论", "数学", "字符串", "数据结构", "双指针", "模拟");
+    private final TopicService topics;
+    private final ProblemLibrary library;
     private final CoachStore store;
     private final Planner planner;
     private final AiCoach ai;
     private final CodeforcesClient cf;
 
-    public CoachController(CoachStore store, Planner planner, AiCoach ai, CodeforcesClient cf) {
+    public CoachController(CoachStore store, Planner planner, AiCoach ai, CodeforcesClient cf, TopicService topics, ProblemLibrary library) {
         this.store = store; this.planner = planner; this.ai = ai; this.cf = cf;
+        this.topics = topics; this.library = library;
     }
 
     @GetMapping("/health")
@@ -37,8 +39,36 @@ public class CoachController {
         long id = userId(session);
         Account account = store.account(id);
         Snapshot snapshot = store.snapshot(id);
-        return Map.of("revision", snapshot.revision(), "workspace", snapshot.workspace(), "username", account.username(), "demo", account.demo(),
-                "problems", store.problems(), "solvedIds", store.excluded(id, snapshot.workspace()), "aiConfigured", ai.configured(), "syncJob", cf.status(id));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("revision", snapshot.revision());
+        result.put("workspace", snapshot.workspace());
+        result.put("username", account.username());
+        result.put("demo", account.demo());
+        result.put("problems", store.referencedProblems(snapshot.workspace()));
+        result.put("catalogTotal", store.problems().size());
+        result.put("topics", topics.topics());
+        result.put("solvedIds", store.excluded(id, snapshot.workspace()));
+        result.put("cfSolvedIds", store.solved(id, snapshot.workspace().profile.handle));
+        result.put("aiConfigured", ai.configured());
+        CodeforcesClient.Job job = cf.status(id);
+        result.put("syncJob", job.handle.equalsIgnoreCase(snapshot.workspace().profile.handle) ? job : new CodeforcesClient.Job());
+        return result;
+    }
+
+    @GetMapping("/problems")
+    public ProblemPage problems(HttpSession session,
+            @RequestParam(defaultValue="") String q, @RequestParam(defaultValue="all") String platform,
+            @RequestParam(defaultValue="all") String topic, @RequestParam(defaultValue="all") String completion,
+            @RequestParam(defaultValue="0") int minRating, @RequestParam(defaultValue="0") int maxRating,
+            @RequestParam(defaultValue="1") int page, @RequestParam(defaultValue="20") int pageSize) {
+        return library.search(userId(session), q, platform, topic, completion, minRating, maxRating, page, pageSize, false);
+    }
+
+    @GetMapping("/cf/solved")
+    public ProblemPage solvedProblems(HttpSession session,
+            @RequestParam(defaultValue="") String q, @RequestParam(defaultValue="all") String topic,
+            @RequestParam(defaultValue="1") int page, @RequestParam(defaultValue="20") int pageSize) {
+        return library.search(userId(session), q, "CF", topic, "solved", 0, 0, page, pageSize, true);
     }
 
     @PostMapping("/auth/demo")
@@ -72,14 +102,16 @@ public class CoachController {
         if (profile == null || profile.name == null || profile.name.isBlank() || profile.name.length() > 30) bad("昵称需要 1～30 个字符");
         if (profile.handle == null || !profile.handle.matches("[A-Za-z0-9_.-]{0,24}")) bad("请填写有效的 CF handle");
         if (profile.goal == null || profile.goal.length() > 300) bad("训练目标最多 300 个字符");
-        if (profile.topics == null || profile.topics.isEmpty() || profile.topics.size() > 10 || !TOPICS.containsAll(profile.topics)) bad("请至少选择一个有效训练专题");
-        if (profile.level < 800 || profile.level > 1600) bad("首版训练起点需在 800～1600 之间");
+        if (profile.topics == null || profile.topics.isEmpty() || profile.topics.size() > 30 || profile.topics.stream().anyMatch(topic -> topic == null || !topics.names().contains(topic))) bad("请选择 1～30 个有效训练专题");
+        if (profile.level < 800 || profile.level > 3500) bad("训练起点需在 800～3500 之间");
         if (profile.dailyMinutes == null || profile.dailyMinutes.size() != 7 || profile.dailyMinutes.stream().anyMatch(minutes -> minutes == null || minutes < 0 || minutes > 480)) bad("每天可用时间需在 0～480 分钟之间");
         long id = userId(session);
         Snapshot snapshot = checked(id, body.revision());
         snapshot.workspace().profile = profile;
         snapshot.workspace().proposal = null;
+        store.alignSyncedTasks(id, snapshot.workspace());
         store.save(id, snapshot.revision(), snapshot.workspace());
+        if (!cf.status(id).handle.equalsIgnoreCase(profile.handle)) cf.cancel(id);
         return state(session);
     }
 
@@ -175,6 +207,7 @@ public class CoachController {
         previous.version = workspace.plan.version + 1;
         previous.explanation = "已撤销上次计划修改，并保留之后产生的训练反馈。";
         workspace.plan = previous;
+        store.alignSyncedTasks(id, workspace);
         if (!previous.dailyMinutes.isEmpty()) workspace.profile.dailyMinutes = new ArrayList<>(previous.dailyMinutes);
         workspace.proposal = null;
         store.save(id, snapshot.revision(), workspace);
@@ -182,12 +215,17 @@ public class CoachController {
     }
 
     @PostMapping("/sync")
-    public CodeforcesClient.Job sync(HttpSession session) {
+    public CodeforcesClient.Job sync(@RequestBody(required=false) SyncRequest request, HttpSession session) {
         long id = userId(session);
         String handle = store.snapshot(id).workspace().profile.handle;
         if (handle.isBlank()) bad("请先在个人设置中填写 CF handle");
-        return cf.start(id, handle);
+        String mode = request == null || request.mode() == null ? "incremental" : request.mode();
+        if (!Set.of("full", "incremental").contains(mode)) bad("请选择完整同步或快速同步");
+        return cf.start(id, handle, mode);
     }
+
+    @PostMapping("/sync/cancel")
+    public CodeforcesClient.Job cancelSync(HttpSession session) { return cf.cancel(userId(session)); }
 
     @GetMapping("/sync")
     public CodeforcesClient.Job syncStatus(HttpSession session) { return cf.status(userId(session)); }
