@@ -29,17 +29,31 @@ import {
   BookOpen,
   LoaderCircle,
   Download,
+  Code2,
 } from 'lucide-vue-next'
 import TaskList from './components/TaskList.vue'
+import CapabilityProfile from './components/CapabilityProfile.vue'
+import MemoryPanel from './components/MemoryPanel.vue'
+import CodeReview from './components/CodeReview.vue'
 import { api, ApiError } from './api'
-import type { AppState, Profile, Task, SyncJob, Problem } from './types'
+import type {
+  AppState,
+  Profile,
+  Task,
+  SyncJob,
+  Problem,
+  ProfileModel,
+  Observation,
+  MemoryEvent,
+} from './types'
 
-type Page = 'dashboard' | 'plan' | 'library' | 'review' | 'settings'
+type Page = 'dashboard' | 'plan' | 'library' | 'review' | 'code' | 'settings'
 const navigation = [
   { id: 'dashboard' as Page, label: '训练概览', icon: LayoutDashboard },
   { id: 'plan' as Page, label: '周训练计划', icon: CalendarDays },
   { id: 'library' as Page, label: '精选题库', icon: Library },
   { id: 'review' as Page, label: '训练复盘', icon: NotebookPen },
+  { id: 'code' as Page, label: '代码审查', icon: Code2 },
 ]
 const topics = [
   '二分',
@@ -76,6 +90,13 @@ const query = ref('')
 const platform = ref('all')
 const topic = ref('all')
 const libraryPage = ref(1)
+const profileModel = ref<ProfileModel | null>(null)
+const memoryData = ref<{ observations: Observation[]; events: MemoryEvent[] }>({
+  observations: [],
+  events: [],
+})
+const memoryBusy = ref('')
+const memoryLoaded = ref(false)
 const workspace = computed(() => state.value?.workspace)
 const plan = computed(() => workspace.value?.plan)
 const tasks = computed(() => plan.value?.tasks || [])
@@ -156,7 +177,7 @@ const activePageTitle = computed(
 
 function readPage(): Page {
   const hash = location.hash.replace('#', '')
-  return ['dashboard', 'plan', 'library', 'review', 'settings'].includes(hash)
+  return ['dashboard', 'plan', 'library', 'review', 'code', 'settings'].includes(hash)
     ? (hash as Page)
     : 'dashboard'
 }
@@ -171,6 +192,12 @@ function handleHash() {
 }
 watch([query, platform, topic], () => {
   libraryPage.value = 1
+})
+watch(page, (value) => {
+  if (value === 'review' || value === 'code') {
+    loadProfileModel()
+    if (!memoryLoaded.value) loadMemory()
+  }
 })
 watch(modal, async (value, oldValue) => {
   if (value && !oldValue) previousFocus = document.activeElement as HTMLElement
@@ -203,6 +230,55 @@ async function load() {
   } catch (error) {
     fatal.value = error instanceof Error ? error.message : '服务连接失败'
   }
+}
+async function loadProfileModel() {
+  try {
+    profileModel.value = await api<ProfileModel>('/profile/model')
+  } catch {
+    profileModel.value = profileModel.value
+  }
+}
+async function loadMemory() {
+  if (memoryBusy.value === 'memory') return
+  memoryBusy.value = 'memory'
+  try {
+    memoryData.value = await api<{ observations: Observation[]; events: MemoryEvent[] }>('/memory')
+    memoryLoaded.value = true
+  } catch (error) {
+    notify(error instanceof Error ? error.message : '记忆读取失败', true)
+  } finally {
+    memoryBusy.value = ''
+  }
+}
+function correctMemory(id: string, statement: string, active: boolean) {
+  act('memory', async () => {
+    memoryData.value = await api<{ observations: Observation[]; events: MemoryEvent[] }>(
+      `/memory/${id}`,
+      'PATCH',
+      { statement, active },
+    )
+    await loadProfileModel()
+    notify(active ? '这条观察已更新' : '已停用这条观察，不再作为依据')
+  })
+}
+function removeMemory(id: string) {
+  act('memory', async () => {
+    await api(`/memory/${id}`, 'DELETE')
+    await loadMemory()
+    await loadProfileModel()
+    notify('已删除这条观察')
+  })
+}
+function addMemory(kind: string, statement: string) {
+  act('memory', async () => {
+    memoryData.value = await api<{ observations: Observation[]; events: MemoryEvent[] }>(
+      '/memory',
+      'POST',
+      { kind, statement },
+    )
+    await loadProfileModel()
+    notify('观察已记录，下次生成计划会引用')
+  })
 }
 async function act(name: string, action: () => Promise<void>) {
   if (busy.value) return
@@ -406,7 +482,10 @@ function escapeModal(event: KeyboardEvent) {
   }
 }
 onMounted(() => {
-  load()
+  load().then(() => {
+    loadProfileModel()
+    if (page.value === 'review' || page.value === 'code') loadMemory()
+  })
   pollTimer = setInterval(pollSync, 1500)
   window.addEventListener('hashchange', handleHash)
   window.addEventListener('keydown', escapeModal)
@@ -967,6 +1046,9 @@ onUnmounted(() => {
                     }}</span>
                   </div>
                   <p>{{ item.note || '这次记录了用时和完成情况。下次可以补充思路与卡点。' }}</p>
+                  <div v-if="item.causes && item.causes.length" class="cause-tags">
+                    <span v-for="cause in item.causes" :key="cause">{{ cause }}</span>
+                  </div>
                   <div class="task-meta">
                     <span>{{ problemMap[item.problemId]?.code }}</span
                     ><span class="icon-text"><Clock3 :size="12" />{{ item.minutes }} 分钟</span
@@ -1011,6 +1093,27 @@ onUnmounted(() => {
               <p class="panel-note">每次任务保留最新复盘。撤销计划调整时，已有复盘仍会保留。</p>
             </aside>
           </div>
+          <div class="insight-grid">
+            <CapabilityProfile :model="profileModel" />
+            <MemoryPanel
+              :observations="memoryData.observations"
+              :events="memoryData.events"
+              :busy="memoryBusy"
+              @correct="correctMemory"
+              @remove="removeMemory"
+              @add="addMemory"
+              @refresh="loadMemory"
+            />
+          </div>
+        </template>
+
+        <template v-if="page === 'code'">
+          <CodeReview
+            :tasks="tasks"
+            :problem-map="problemMap"
+            @notify="notify"
+            @refresh="loadMemory"
+          />
         </template>
 
         <template v-if="page === 'settings' && draft">
@@ -1249,6 +1352,17 @@ onUnmounted(() => {
               }}</span>
             </div>
             <p>{{ workspace!.proposal.reason }}</p>
+            <p v-if="workspace!.proposal.plan.timeEcho" class="proposal-time">
+              时间解析：{{ workspace!.proposal.plan.timeEcho }}
+            </p>
+            <ul
+              v-if="workspace!.proposal.basis && workspace!.proposal.basis.length"
+              class="basis-list"
+            >
+              <li v-for="(item, index) in workspace!.proposal.basis" :key="index">
+                <span>依据</span>{{ item }}
+              </li>
+            </ul>
             <div class="proposal-comparison">
               <div>
                 <small>当前计划</small

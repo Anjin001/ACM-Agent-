@@ -38,6 +38,59 @@ assert.equal(reloaded.workspace.profile.name, '验收学员')
 assert.equal(reloaded.workspace.feedback[0].note, state.workspace.feedback[0].note)
 console.log('PASS 注册、设置、生成计划、旧版本冲突、反馈、调整、接受、撤销及再次读取')
 
+// 中文时间意图：槽位解析 + 回显 + 计划依据
+state = await request('/plan/proposal', 'POST', { revision: state.revision, instruction: '这周六抽半小时，周四没时间，最近总是边界出错' })
+assert.equal(state.workspace.proposal.plan.dailyMinutes[5], 30)
+assert.equal(state.workspace.proposal.plan.dailyMinutes[3], 0)
+assert.ok(state.workspace.proposal.plan.timeEcho.includes('周六 30 分钟'))
+assert.ok(state.workspace.proposal.basis.length > 0)
+console.log(`PASS 中文时间解析：${state.workspace.proposal.plan.timeEcho}`)
+
+// 教练记忆：有出处、可更正、可停用
+const memory = await request('/memory')
+assert.ok(memory.observations.length > 0)
+assert.ok(memory.events.length > 0)
+const observation = memory.observations[0]
+// 接口返回整表，前端直接用 observations 覆盖，停用后这条必须还在列表里
+const offline = await request(`/memory/${observation.id}`, 'PATCH', { statement: observation.statement, active: false })
+assert.equal(offline.observations.length, memory.observations.length)
+const disabled = offline.observations.find(item => item.id === observation.id)
+assert.ok(disabled, '停用后观察仍在列表中')
+assert.equal(disabled.active, false)
+const restored = await request(`/memory/${observation.id}`, 'PATCH', { statement: observation.statement, active: true })
+assert.equal(restored.observations.find(item => item.id === observation.id).active, true)
+const added = await request('/memory', 'POST', { kind: 'constraint', statement: '周三晚上有课，不要排任务' })
+assert.ok(added.observations.some(item => item.statement === '周三晚上有课，不要排任务'))
+console.log(`PASS 教练记忆 ${memory.observations.length} 条观察、${memory.events.length} 条事件，可停用与恢复`)
+
+// 能力画像：等级、样本与证据
+const model = await request('/profile/model')
+assert.ok(model.samples >= 1)
+assert.ok(model.topics.some(topic => topic.samples > 0 && topic.evidence.length > 0))
+assert.ok(model.summary.length > 0)
+console.log(`PASS 能力画像：${model.samples} 条样本，独立完成率 ${Math.round(model.independentRate * 100)}%`)
+
+// 代码审查：规则检查 + 历史
+const source = [
+  '#include <bits/stdc++.h>',
+  'using namespace std;',
+  'int a[1005];',
+  'int main() {',
+  '  int l = 1, r = 2000000000;',
+  '  while (l < r) {',
+  '    int mid = (l + r) / 2;',
+  '    if (a[mid] < 3) l = mid + 1; else r = mid;',
+  '  }',
+  '  return 0;',
+  '}',
+].join('\n')
+const review = await request('/code/review', 'POST', { problemId: task.problemId, files: [{ name: 'main.cpp', content: source }] })
+assert.equal(review.engine, 'rules')
+assert.ok(review.findings.some(item => item.message.includes('溢出')))
+const reviews = await request('/code/review')
+assert.ok(reviews.length >= 1)
+console.log(`PASS 代码审查：${review.findings.length} 处提示（高 ${review.high} / 中 ${review.medium} / 低 ${review.low}）`)
+
 if (process.env.SMOKE_CF === '1') {
   await request('/sync', 'POST')
   let job

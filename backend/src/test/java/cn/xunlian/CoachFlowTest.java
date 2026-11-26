@@ -8,15 +8,27 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import java.nio.file.Path;
 import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:coachtests;MODE=MySQL;DB_CLOSE_DELAY=-1")
+@SpringBootTest
 @AutoConfigureMockMvc
 class CoachFlowTest {
+    // 每次运行独立的 SQLite 库，验证的是生产用的同一种方言。
+    static final String DB_URL = "jdbc:sqlite:" + Path.of("target", "test-" + UUID.randomUUID() + ".db").toAbsolutePath()
+            + "?journal_mode=WAL&busy_timeout=5000";
+
+    @DynamicPropertySource
+    static void sqlite(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", () -> DB_URL);
+    }
+
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
     @Autowired CoachStore store;
@@ -104,6 +116,130 @@ class CoachFlowTest {
         ((com.fasterxml.jackson.databind.node.ObjectNode) profile).set("dailyMinutes", json.valueToTree(List.of(-1,60,60,60,60,60,60)));
         mvc.perform(put("/api/profile").session(session).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("revision", generated.path("revision").asLong(), "profile", profile))))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void feedbackBecomesMemoryAndPlanCitesIt() throws Exception {
+        MockHttpSession session = register();
+        JsonNode generated = seedPlan(session);
+        JsonNode task = generated.path("workspace").path("plan").path("tasks").path(0);
+        JsonNode reviewed = send(session, "POST", "/api/feedback", Map.of("revision", generated.path("revision").asLong(),
+                "taskId", task.path("id").asText(), "outcome", "editorial", "minutes", 55,
+                "note", "又是二分边界写错，最后还超时了"));
+
+        JsonNode memory = getJson(session, "/api/memory");
+        String statements = memory.path("observations").toString();
+        assertThat(statements).contains("边界");
+        assertThat(memory.path("events").size()).isGreaterThan(0);
+
+        JsonNode regenerated = send(session, "POST", "/api/plan/generate", Map.of("revision", reviewed.path("revision").asLong()));
+        assertThat(regenerated.path("workspace").path("plan").path("basis").size()).isGreaterThan(0);
+    }
+
+    @Test
+    void memoryCanBeCorrectedAndDisabled() throws Exception {
+        MockHttpSession session = register();
+        JsonNode generated = seedPlan(session);
+        JsonNode task = generated.path("workspace").path("plan").path("tasks").path(0);
+        send(session, "POST", "/api/feedback", Map.of("revision", generated.path("revision").asLong(),
+                "taskId", task.path("id").asText(), "outcome", "stuck", "minutes", 70, "note", "边界完全没想清楚"));
+
+        JsonNode memory = getJson(session, "/api/memory");
+        String id = memory.path("observations").path(0).path("id").asText();
+        assertThat(id).isNotBlank();
+
+        JsonNode corrected = json.readTree(mvc.perform(patch("/api/memory/" + id).session(session)
+                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("statement", "边界判断需要回看模板", "active", false))))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        JsonNode item = null;
+        for (JsonNode candidate : corrected.path("observations")) {
+            if (id.equals(candidate.path("id").asText())) { item = candidate; break; }
+        }
+        assertThat(item).as("停用后的观察必须仍然留在列表里，供面板整表刷新").isNotNull();
+        assertThat(item.path("active").asBoolean()).isFalse();
+        assertThat(item.path("statement").asText()).isEqualTo("边界判断需要回看模板");
+
+        JsonNode restored = json.readTree(mvc.perform(patch("/api/memory/" + id).session(session)
+                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("active", true))))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        assertThat(restored.path("observations").size()).isGreaterThan(1);
+        assertThat(restored.path("observations").toString()).contains("边界判断需要回看模板");
+    }
+
+    @Test
+    void profileModelReportsLevelSamplesAndEvidence() throws Exception {
+        MockHttpSession session = register();
+        JsonNode generated = seedPlan(session);
+        JsonNode task = generated.path("workspace").path("plan").path("tasks").path(0);
+        send(session, "POST", "/api/feedback", Map.of("revision", generated.path("revision").asLong(),
+                "taskId", task.path("id").asText(), "outcome", "independent", "minutes", 28, "note", "独立完成，注意了边界"));
+
+        JsonNode model = getJson(session, "/api/profile/model");
+        assertThat(model.path("samples").asInt()).isEqualTo(1);
+        assertThat(model.path("summary").asText()).isNotBlank();
+        JsonNode scored = null;
+        for (JsonNode topic : model.path("topics")) {
+            if (topic.path("samples").asInt() > 0) { scored = topic; break; }
+        }
+        assertThat(scored).isNotNull();
+        assertThat(scored.path("evidence").size()).isGreaterThan(0);
+        assertThat(scored.path("independentRate").asDouble()).isEqualTo(1.0);
+    }
+
+    @Test
+    void codeReviewFindsOverflowAndPersistsHistory() throws Exception {
+        MockHttpSession session = register();
+        String code = String.join("\n",
+                "#include <bits/stdc++.h>",
+                "using namespace std;",
+                "int a[1005];",
+                "int main() {",
+                "  int l = 1, r = 2000000000;",
+                "  while (l < r) {",
+                "    int mid = (l + r) / 2;",
+                "    if (a[mid] < 3) l = mid + 1; else r = mid;",
+                "  }",
+                "  return 0;",
+                "}");
+        JsonNode review = send(session, "POST", "/api/code/review",
+                Map.of("problemId", "CF-706-B", "files", List.of(Map.of("name", "main.cpp", "content", code))));
+        assertThat(review.path("engine").asText()).isEqualTo("rules");
+        assertThat(review.path("findings").toString()).contains("溢出");
+        assertThat(review.path("files").path(0).path("lines").asInt()).isEqualTo(11);
+
+        JsonNode history = getJson(session, "/api/code/review");
+        assertThat(history.size()).isEqualTo(1);
+        assertThat(history.path(0).path("findings").size()).isGreaterThan(0);
+
+        JsonNode memory = getJson(session, "/api/memory");
+        assertThat(memory.path("observations").toString()).contains("代码审查");
+    }
+
+    @Test
+    void codeReviewRejectsOversizedSubmission() throws Exception {
+        MockHttpSession session = register();
+        String big = "int main(){}" + "a".repeat(21000);
+        mvc.perform(post("/api/code/review").session(session).contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("files", List.of(Map.of("name", "big.cpp", "content", big))))))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** 保证测试当天（含周末）也能排出至少一个任务。 */
+    private JsonNode seedPlan(MockHttpSession session) throws Exception {
+        JsonNode generated = send(session, "POST", "/api/plan/generate", Map.of("revision", 0));
+        if (generated.path("workspace").path("plan").path("tasks").isEmpty()) {
+            JsonNode profile = generated.path("workspace").path("profile").deepCopy();
+            ((com.fasterxml.jackson.databind.node.ObjectNode) profile).set("dailyMinutes", json.valueToTree(List.of(90, 90, 90, 90, 90, 90, 90)));
+            generated = send(session, "PUT", "/api/profile", Map.of("revision", generated.path("revision").asLong(), "profile", profile));
+            generated = send(session, "POST", "/api/plan/generate", Map.of("revision", generated.path("revision").asLong()));
+        }
+        assertThat(generated.path("workspace").path("plan").path("tasks").size()).isGreaterThan(0);
+        return generated;
+    }
+
+    private JsonNode getJson(MockHttpSession session, String path) throws Exception {
+        return json.readTree(mvc.perform(get(path).session(session)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     private MockHttpSession register() throws Exception {

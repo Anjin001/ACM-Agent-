@@ -1,10 +1,11 @@
 package cn.xunlian;
 
 import org.springframework.stereotype.Service;
+
 import java.time.*;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
-import java.util.regex.*;
+
 import static cn.xunlian.Models.*;
 
 @Service
@@ -24,6 +25,14 @@ public class Planner {
     }
 
     public Plan generate(long userId, Workspace workspace, String instruction) {
+        return generate(userId, workspace, instruction, List.of());
+    }
+
+    /**
+     * 生成周计划。时间要求交给 Nlp 解析成槽位；排期用时按历史实际用时校准；
+     * 计划会带上依据（记忆原文），便于在界面上说明「为什么这样排」。
+     */
+    public Plan generate(long userId, Workspace workspace, String instruction, List<String> memory) {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Shanghai"));
         String monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toString();
         Plan plan = new Plan();
@@ -34,7 +43,9 @@ public class Planner {
             plan.tasks = workspace.plan.tasks.stream().filter(task -> !task.status.equals("todo"))
                     .map(task -> store.copy(task, Task.class)).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         }
-        applyTimeInstruction(plan.dailyMinutes, instruction);
+        plan.timeEcho = applyTimeInstruction(plan.dailyMinutes, instruction);
+
+        Map<String, Double> calibration = calibration(workspace);
         Set<String> used = new HashSet<>();
         plan.tasks.forEach(task -> used.add(task.problemId));
         String focus = workspace.feedback.stream()
@@ -52,18 +63,23 @@ public class Planner {
             int usedMinutes = plan.tasks.stream().filter(task -> task.day == taskDay).mapToInt(task -> task.minutes).sum();
             int remaining = plan.dailyMinutes.get(day) - usedMinutes;
             for (Problem problem : available) {
-                if (used.contains(problem.id) || problem.minutes > remaining || added >= 6) continue;
+                if (used.contains(problem.id) || added >= 6) continue;
+                int minutes = estimate(problem, calibration);
+                if (minutes > remaining) continue;
                 Task task = new Task();
                 task.id = UUID.randomUUID().toString();
                 task.problemId = problem.id;
                 task.day = day;
-                task.minutes = problem.minutes;
+                task.minutes = minutes;
                 task.reason = problem.tags.contains(focus)
                         ? "针对最近参考题解或卡住的专题，再安排一次独立练习。"
                         : "符合你选择的" + String.join("、", problem.tags.stream().filter(workspace.profile.topics::contains).toList()) + "专题，预计用时适合当天安排。";
+                if (minutes != problem.minutes) {
+                    task.reason += "用时按你在这个专题的实际记录校准为 " + minutes + " 分钟。";
+                }
                 plan.tasks.add(task);
                 used.add(problem.id);
-                remaining -= task.minutes;
+                remaining -= minutes;
                 added++;
             }
         }
@@ -71,24 +87,42 @@ public class Planner {
         plan.explanation = added == 0
                 ? "本周剩余时段没有能容纳的候选题。可以增加可用时间、调整专题或同步更多题目。"
                 : "已保留有训练记录的任务，按本周剩余时段安排 " + added + " 道新题。" + (focus.isEmpty() ? "" : "优先巩固近期需要帮助的" + focus + "专题。");
+        plan.basis = new ArrayList<>(memory.stream().limit(2).toList());
         return plan;
     }
 
-    private void applyTimeInstruction(List<Integer> budgets, String instruction) {
-        if (instruction == null) return;
-        Matcher daily = Pattern.compile("每天[^0-9]{0,8}([0-9]{1,3})\\s*分钟").matcher(instruction);
-        if (daily.find()) {
-            int minutes = Math.min(480, Integer.parseInt(daily.group(1)));
-            Collections.fill(budgets, minutes);
+    /** 同一专题的历史「实际用时 / 估计用时」中位数，用于把排期从拍脑袋变成按证据估算。 */
+    private Map<String, Double> calibration(Workspace workspace) {
+        Map<String, List<Double>> ratios = new HashMap<>();
+        Map<String, Problem> byId = new HashMap<>();
+        store.problems().forEach(problem -> byId.put(problem.id, problem));
+        for (Feedback feedback : workspace.feedback) {
+            Problem problem = byId.get(feedback.problemId);
+            if (problem == null || problem.minutes <= 0 || feedback.minutes <= 0 || problem.tags.isEmpty()) continue;
+            double ratio = (double) feedback.minutes / problem.minutes;
+            ratios.computeIfAbsent(problem.tags.get(0), key -> new ArrayList<>()).add(ratio);
         }
-        Matcher matcher = Pattern.compile("周([一二三四五六日天])[^0-9周]{0,12}([0-9]{1,3})\\s*分钟").matcher(instruction);
-        while (matcher.find()) {
-            int day = "一二三四五六日".indexOf(matcher.group(1).replace("天", "日"));
-            budgets.set(day, Math.min(480, Integer.parseInt(matcher.group(2))));
-        }
-        for (int day = 0; day < 7; day++) {
-            String name = "周" + "一二三四五六日".charAt(day);
-            if (instruction.matches("(?s).*" + name + "(?:没时间|没有时间|不能练|不练).*")) budgets.set(day, 0);
-        }
+        Map<String, Double> result = new HashMap<>();
+        ratios.forEach((tag, values) -> {
+            if (values.size() < 2) return;
+            Collections.sort(values);
+            double median = values.size() % 2 == 1
+                    ? values.get(values.size() / 2)
+                    : (values.get(values.size() / 2 - 1) + values.get(values.size() / 2)) / 2;
+            result.put(tag, Math.max(0.5, Math.min(2.0, median)));
+        });
+        return result;
+    }
+
+    private int estimate(Problem problem, Map<String, Double> calibration) {
+        double ratio = problem.tags.stream().map(calibration::get).filter(Objects::nonNull)
+                .findFirst().orElse(1.0);
+        return (int) Math.max(10, Math.min(240, Math.round(problem.minutes * ratio)));
+    }
+
+    private String applyTimeInstruction(List<Integer> budgets, String instruction) {
+        Nlp.TimeIntent intent = Nlp.timeIntent(instruction);
+        intent.overrides().forEach(budgets::set);
+        return Nlp.echo(intent);
     }
 }

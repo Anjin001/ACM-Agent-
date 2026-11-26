@@ -5,26 +5,42 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
+
 import static cn.xunlian.Models.*;
 
 @RestController
 @RequestMapping("/api")
 public class CoachController {
     private static final Set<String> TOPICS = Set.of("二分", "搜索", "动态规划", "贪心", "图论", "数学", "字符串", "数据结构", "双指针", "模拟");
+    private static final Set<String> MEMORY_KINDS = Set.of("goal", "error_pattern", "code_issue", "strength", "constraint");
+
     private final CoachStore store;
     private final Planner planner;
     private final AiCoach ai;
     private final CodeforcesClient cf;
+    private final CoachMemory memory;
+    private final MemoryStore memoryStore;
+    private final ProfileModeler modeler;
+    private final CodeReviewer reviewer;
 
-    public CoachController(CoachStore store, Planner planner, AiCoach ai, CodeforcesClient cf) {
-        this.store = store; this.planner = planner; this.ai = ai; this.cf = cf;
+    public CoachController(CoachStore store, Planner planner, AiCoach ai, CodeforcesClient cf,
+                           CoachMemory memory, MemoryStore memoryStore, ProfileModeler modeler, CodeReviewer reviewer) {
+        this.store = store;
+        this.planner = planner;
+        this.ai = ai;
+        this.cf = cf;
+        this.memory = memory;
+        this.memoryStore = memoryStore;
+        this.modeler = modeler;
+        this.reviewer = reviewer;
     }
 
     @GetMapping("/health")
-    public Map<String, Object> health() { return Map.of("status", "ok", "version", "0.1.0"); }
+    public Map<String, Object> health() { return Map.of("status", "ok", "version", "0.2.0"); }
 
     @GetMapping("/bootstrap")
     public Map<String, Object> bootstrap(HttpServletRequest request) {
@@ -38,7 +54,8 @@ public class CoachController {
         Account account = store.account(id);
         Snapshot snapshot = store.snapshot(id);
         return Map.of("revision", snapshot.revision(), "workspace", snapshot.workspace(), "username", account.username(), "demo", account.demo(),
-                "problems", store.problems(), "solvedIds", store.excluded(id, snapshot.workspace()), "aiConfigured", ai.configured(), "syncJob", cf.status(id));
+                "problems", store.problems(), "solvedIds", store.excluded(id, snapshot.workspace()), "aiConfigured", ai.configured(),
+                "syncJob", cf.status(id));
     }
 
     @PostMapping("/auth/demo")
@@ -80,6 +97,8 @@ public class CoachController {
         snapshot.workspace().profile = profile;
         snapshot.workspace().proposal = null;
         store.save(id, snapshot.revision(), snapshot.workspace());
+        memory.observeGoal(id, profile);
+        memory.event(id, "profile", "更新训练目标与时间预算");
         return state(session);
     }
 
@@ -88,11 +107,12 @@ public class CoachController {
         long id = userId(session);
         Snapshot snapshot = checked(id, body.revision());
         Workspace workspace = snapshot.workspace();
-        Plan plan = planner.generate(id, workspace, "");
+        Plan plan = planner.generate(id, workspace, "", memory.activeStatements(id, 3));
         archive(workspace);
         workspace.plan = plan;
         workspace.proposal = null;
         store.save(id, snapshot.revision(), workspace);
+        memory.event(id, "plan", "生成本周计划 v" + plan.version + "，共 " + plan.tasks.size() + " 个任务");
         return state(session);
     }
 
@@ -105,7 +125,8 @@ public class CoachController {
         Snapshot snapshot = checked(id, body.revision());
         Workspace workspace = snapshot.workspace();
         if (workspace.plan == null) bad("请先生成训练计划");
-        Task task = workspace.plan.tasks.stream().filter(item -> item.id.equals(body.taskId())).findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "训练任务已变化，请刷新"));
+        Task task = workspace.plan.tasks.stream().filter(item -> item.id.equals(body.taskId())).findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "训练任务已变化，请刷新"));
         Feedback feedback = new Feedback();
         feedback.id = UUID.randomUUID().toString();
         feedback.taskId = task.id;
@@ -119,6 +140,10 @@ public class CoachController {
         task.status = body.outcome();
         workspace.proposal = null;
         store.save(id, snapshot.revision(), workspace);
+
+        Problem problem = store.problems().stream().filter(item -> item.id.equals(feedback.problemId)).findFirst().orElse(null);
+        feedback.causes = memory.observeFeedback(id, feedback, problem);
+        memory.event(id, "feedback", "记录复盘：" + (problem == null ? feedback.problemId : problem.code) + "（" + outcomeLabel(body.outcome()) + "）");
         return state(session);
     }
 
@@ -129,14 +154,19 @@ public class CoachController {
         Snapshot snapshot = checked(id, body.revision());
         Workspace workspace = snapshot.workspace();
         if (workspace.plan == null) bad("请先生成训练计划");
+        List<String> statements = memory.activeStatements(id, 6);
         Proposal proposal = new Proposal();
         proposal.id = UUID.randomUUID().toString();
         proposal.baseVersion = workspace.plan.version;
-        proposal.plan = planner.generate(id, workspace, body.instruction());
+        proposal.plan = planner.generate(id, workspace, body.instruction(), statements);
         proposal.reason = proposal.plan.explanation;
-        ai.refine(proposal, workspace, planner.candidates(id, workspace), body.instruction());
+        proposal.basis = new ArrayList<>(proposal.plan.basis);
+        ProfileModel model = modeler.build(workspace, store.problems());
+        ai.refine(proposal, workspace, planner.candidates(id, workspace), body.instruction(), statements, model);
+        if (proposal.basis == null || proposal.basis.isEmpty()) proposal.basis = new ArrayList<>(statements.stream().limit(2).toList());
         workspace.proposal = proposal;
         store.save(id, snapshot.revision(), workspace);
+        memory.event(id, "proposal", "生成调整方案（" + ("model".equals(proposal.engine) ? "模型" : "规则") + "）");
         return state(session);
     }
 
@@ -152,6 +182,7 @@ public class CoachController {
         workspace.profile.dailyMinutes = new ArrayList<>(proposal.plan.dailyMinutes);
         workspace.proposal = null;
         store.save(id, snapshot.revision(), workspace);
+        memory.event(id, "accept", "接受调整方案，计划更新到 v" + proposal.plan.version);
         return state(session);
     }
 
@@ -178,6 +209,7 @@ public class CoachController {
         if (!previous.dailyMinutes.isEmpty()) workspace.profile.dailyMinutes = new ArrayList<>(previous.dailyMinutes);
         workspace.proposal = null;
         store.save(id, snapshot.revision(), workspace);
+        memory.event(id, "undo", "撤销上次计划修改，保留新增复盘");
         return state(session);
     }
 
@@ -186,11 +218,66 @@ public class CoachController {
         long id = userId(session);
         String handle = store.snapshot(id).workspace().profile.handle;
         if (handle.isBlank()) bad("请先在个人设置中填写 CF handle");
+        memory.event(id, "sync", "开始同步 CF 公开提交记录");
         return cf.start(id, handle);
     }
 
     @GetMapping("/sync")
     public CodeforcesClient.Job syncStatus(HttpSession session) { return cf.status(userId(session)); }
+
+    // ---------------------------------------------------------------- 能力画像
+
+    @GetMapping("/profile/model")
+    public ProfileModel profileModel(HttpSession session) {
+        long id = userId(session);
+        return modeler.build(store.snapshot(id).workspace(), store.problems());
+    }
+
+    // ---------------------------------------------------------------- 教练记忆
+
+    @GetMapping("/memory")
+    public Map<String, Object> memory(HttpSession session) {
+        long id = userId(session);
+        return Map.of("observations", memoryStore.list(id, false), "events", memoryStore.events(id, 12));
+    }
+
+    @PostMapping("/memory")
+    public Map<String, Object> addMemory(@RequestBody MemoryRequest body, HttpSession session) {
+        long id = userId(session);
+        if (body.statement() == null || body.statement().isBlank() || body.statement().length() > 200) bad("观察内容需要 1～200 个字符");
+        String kind = body.kind() != null && MEMORY_KINDS.contains(body.kind()) ? body.kind() : "goal";
+        Observation item = memoryStore.upsert(id, kind, body.statement().trim(), body.detail(), "manual", null, 1.0);
+        memory.event(id, "memory", "手动补充观察：" + item.statement);
+        return Map.of("observations", memoryStore.list(id, false), "events", memoryStore.events(id, 12));
+    }
+
+    @PatchMapping("/memory/{id}")
+    public Map<String, Object> correctMemory(@PathVariable String id, @RequestBody MemoryCorrection body, HttpSession session) {
+        long userId = userId(session);
+        if (body.statement() != null && body.statement().length() > 200) bad("观察内容最多 200 个字符");
+        Observation item = memoryStore.correct(userId, id, body.statement(), body.active());
+        memory.event(userId, "memory", (Boolean.FALSE.equals(body.active()) ? "停用观察：" : "更正观察：") + item.statement);
+        return Map.of("observations", memoryStore.list(userId, false), "events", memoryStore.events(userId, 12));
+    }
+
+    @DeleteMapping("/memory/{id}")
+    public Map<String, Object> deleteMemory(@PathVariable String id, HttpSession session) {
+        long userId = userId(session);
+        memoryStore.remove(userId, id);
+        return Map.of("deleted", id);
+    }
+
+    // ---------------------------------------------------------------- 代码审查
+
+    @PostMapping("/code/review")
+    public CodeReview review(@RequestBody CodeReviewRequest body, HttpSession session) {
+        return reviewer.review(userId(session), body);
+    }
+
+    @GetMapping("/code/review")
+    public List<CodeReview> reviews(@RequestParam(defaultValue = "6") int limit, HttpSession session) {
+        return reviewer.history(userId(session), Math.max(1, Math.min(20, limit)));
+    }
 
     private void archive(Workspace workspace) {
         if (workspace.plan != null) workspace.history.add(store.copy(workspace.plan, Plan.class));
@@ -213,6 +300,23 @@ public class CoachController {
         HttpSession session = request.getSession();
         request.changeSessionId();
         session.setAttribute("userId", account.id());
+        Workspace workspace = store.snapshot(account.id()).workspace();
+        memory.observeGoal(account.id(), workspace.profile);
+        // 演示空间首次进入时，用示例复盘补上观察，方便课堂直接看到记忆与引用效果。
+        if (account.demo() && memory.active(account.id()).stream().noneMatch(item -> "error_pattern".equals(item.kind))) {
+            for (Feedback item : workspace.feedback) {
+                Problem problem = store.problems().stream().filter(problem2 -> problem2.id.equals(item.problemId)).findFirst().orElse(null);
+                memory.observeFeedback(account.id(), item, problem);
+                memory.event(account.id(), "feedback", "记录复盘：" + (problem == null ? item.problemId : problem.code) + "（" + outcomeLabel(item.outcome) + "）");
+            }
+        }
+    }
+
+    /** 与前端复盘列表保持同一套说法，事件时间线里不出现原始枚举值。 */
+    private static String outcomeLabel(String outcome) {
+        if ("independent".equals(outcome)) return "独立完成";
+        if ("editorial".equals(outcome)) return "参考题解";
+        return "仍在探索";
     }
 
     private void validateCredentials(Credentials credentials) {
