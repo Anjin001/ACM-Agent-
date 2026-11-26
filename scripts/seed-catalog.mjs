@@ -10,9 +10,9 @@ if (data.status !== 'OK') throw new Error('CF 题库获取失败')
 const topicMap = {
   'binary search': '二分', 'two pointers': '双指针', 'dfs and similar': '搜索',
   'bfs': '搜索', 'dp': '动态规划', 'greedy': '贪心', 'graphs': '图论',
-  'math': '数学', 'strings': '字符串', 'data structures': '数据结构', 'implementation': '模拟',
+  'math': '数学', 'strings': '字符串', 'data structures': '数据结构', 'implementation': '模拟', 'geometry': '计算几何',
 }
-const fixed = new Set(['706B','474B','279B','492B','4A','71A','231A','158A','282A','580C','363B','230B','977E','1324D'])
+const fixed = new Set(['706B','474B','279B','492B','4A','71A','231A','158A','282A','580C','363B','230B','977E','1324D','2148B','2120B','2119B','2002C'])
 const selected = new Map()
 for (const topic of Object.keys(topicMap)) {
   for (const difficulty of [800, 1000, 1200, 1400]) {
@@ -46,6 +46,9 @@ const luogu = [
   ['P3371','【模板】单源最短路径（弱化版）','图论','普及/提高−',60],
   ['P3367','【模板】并查集','数据结构','普及−',40],
   ['P3375','【模板】KMP','字符串','普及/提高−',60],
+  ['P2742','【模板】二维凸包 / 圈奶牛','计算几何','专项练习',55],
+  ['P1452','[USACO03FALL] Beauty Contest G','计算几何','专项练习',65],
+  ['P1742','最小圆覆盖','计算几何','专项练习',75],
   ['P3383','【模板】线性筛素数','数学','普及−',40],
 ]
 luogu.forEach(([code,title,topic,difficulty,minutes]) => problems.push({

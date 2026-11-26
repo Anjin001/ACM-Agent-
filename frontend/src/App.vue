@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import {
   LayoutDashboard,
+  ChartNoAxesColumnIncreasing,
   CalendarDays,
   Library,
   NotebookPen,
@@ -29,17 +30,33 @@ import {
   BookOpen,
   LoaderCircle,
   Download,
+  Code2,
 } from 'lucide-vue-next'
 import TaskList from './components/TaskList.vue'
+import AbilityAssessment from './components/AbilityAssessment.vue'
+import MemoryPanel from './components/MemoryPanel.vue'
+import CodeWorkspace from './components/CodeWorkspace.vue'
+import TimedAssessment from './components/TimedAssessment.vue'
 import { api, ApiError } from './api'
-import type { AppState, Profile, Task, SyncJob, Problem } from './types'
+import type {
+  AppState,
+  Profile,
+  Task,
+  SyncJob,
+  Problem,
+  ProfileModel,
+  Observation,
+  MemoryEvent,
+} from './types'
 
-type Page = 'dashboard' | 'plan' | 'library' | 'review' | 'settings'
+type Page = 'dashboard' | 'plan' | 'library' | 'review' | 'ability' | 'code' | 'settings'
 const navigation = [
   { id: 'dashboard' as Page, label: '训练概览', icon: LayoutDashboard },
   { id: 'plan' as Page, label: '周训练计划', icon: CalendarDays },
   { id: 'library' as Page, label: '精选题库', icon: Library },
+  { id: 'ability' as Page, label: '能力评估', icon: ChartNoAxesColumnIncreasing },
   { id: 'review' as Page, label: '训练复盘', icon: NotebookPen },
+  { id: 'code' as Page, label: '教练工作台', icon: Code2 },
 ]
 const topics = [
   '二分',
@@ -49,6 +66,7 @@ const topics = [
   '图论',
   '数学',
   '字符串',
+  '计算几何',
   '数据结构',
   '双指针',
   '模拟',
@@ -66,17 +84,43 @@ let polling = false
 let previousFocus: HTMLElement | null = null
 const modal = ref<'feedback' | 'adjust' | 'auth' | null>(null)
 const activeTask = ref<Task | null>(null)
-const feedback = ref({ outcome: 'independent', minutes: 40, note: '' })
+const feedback = ref({ outcome: 'independent', minutes: 40, note: '', editorialNotes: '', mistakeNote: '' })
 const instruction = ref('针对最近参考题解才完成的题，再安排一次独立练习。')
 const authMode = ref<'login' | 'register'>('register')
 const credentials = ref({ username: '', password: '' })
 const draft = ref<Profile | null>(null)
+const aiDraft = ref({ baseUrl: '', model: '', apiKey: '' })
+watch(() => state.value?.username, resetAiDraft)
 const selectedDay = ref(-1)
 const query = ref('')
 const platform = ref('all')
 const topic = ref('all')
 const libraryPage = ref(1)
+const profileModel = ref<ProfileModel | null>(null)
+const profileError = ref('')
+const profileLoading = ref(false)
+let profileRequest = 0
+watch(() => state.value?.username, () => {
+  profileRequest++
+  profileModel.value = null
+  profileError.value = ''
+  profileLoading.value = false
+  if (page.value === 'ability') void loadProfileModel()
+}, { flush: 'sync' })
+const memoryData = ref<{ observations: Observation[]; events: MemoryEvent[] }>({
+  observations: [],
+  events: [],
+})
+const memoryBusy = ref('')
+const memoryLoaded = ref(false)
 const workspace = computed(() => state.value?.workspace)
+const trainingLevel = computed(() => {
+  const current = workspace.value
+  if (!current) return null
+  return !current.profile.manualLevel && current.profile.handle &&
+    current.profile.handle.toLowerCase() === current.sync.handle?.toLowerCase()
+    ? current.sync.rating ?? current.profile.level : current.profile.level
+})
 const plan = computed(() => workspace.value?.plan)
 const tasks = computed(() => plan.value?.tasks || [])
 const completed = computed(() =>
@@ -156,7 +200,7 @@ const activePageTitle = computed(
 
 function readPage(): Page {
   const hash = location.hash.replace('#', '')
-  return ['dashboard', 'plan', 'library', 'review', 'settings'].includes(hash)
+  return ['dashboard', 'plan', 'library', 'review', 'ability', 'code', 'settings'].includes(hash)
     ? (hash as Page)
     : 'dashboard'
 }
@@ -171,6 +215,10 @@ function handleHash() {
 }
 watch([query, platform, topic], () => {
   libraryPage.value = 1
+})
+watch(page, (value) => {
+  if (value === 'ability') void loadProfileModel()
+  if ((value === 'review' || value === 'code') && !memoryLoaded.value) void loadMemory()
 })
 watch(modal, async (value, oldValue) => {
   if (value && !oldValue) previousFocus = document.activeElement as HTMLElement
@@ -204,6 +252,62 @@ async function load() {
     fatal.value = error instanceof Error ? error.message : '服务连接失败'
   }
 }
+async function loadProfileModel() {
+  if (!state.value) return
+  const request = ++profileRequest
+  profileLoading.value = true
+  profileError.value = ''
+  try {
+    const model = await api<ProfileModel>('/profile/model')
+    if (request === profileRequest) profileModel.value = model
+  } catch {
+    if (request === profileRequest) profileError.value = '能力评估加载失败，请重试'
+  } finally {
+    if (request === profileRequest) profileLoading.value = false
+  }
+}
+async function loadMemory() {
+  if (memoryBusy.value === 'memory') return
+  memoryBusy.value = 'memory'
+  try {
+    memoryData.value = await api<{ observations: Observation[]; events: MemoryEvent[] }>('/memory')
+    memoryLoaded.value = true
+  } catch (error) {
+    notify(error instanceof Error ? error.message : '记忆读取失败', true)
+  } finally {
+    memoryBusy.value = ''
+  }
+}
+function correctMemory(id: string, statement: string, active: boolean) {
+  act('memory', async () => {
+    memoryData.value = await api<{ observations: Observation[]; events: MemoryEvent[] }>(
+      `/memory/${id}`,
+      'PATCH',
+      { statement, active },
+    )
+    await loadProfileModel()
+    notify(active ? '这条观察已更新' : '已停用这条观察，不再作为依据')
+  })
+}
+function removeMemory(id: string) {
+  act('memory', async () => {
+    await api(`/memory/${id}`, 'DELETE')
+    await loadMemory()
+    await loadProfileModel()
+    notify('已删除这条观察')
+  })
+}
+function addMemory(kind: string, statement: string) {
+  act('memory', async () => {
+    memoryData.value = await api<{ observations: Observation[]; events: MemoryEvent[] }>(
+      '/memory',
+      'POST',
+      { kind, statement },
+    )
+    await loadProfileModel()
+    notify('观察已记录，下次生成计划会引用')
+  })
+}
 async function act(name: string, action: () => Promise<void>) {
   if (busy.value) return
   busy.value = name
@@ -226,7 +330,7 @@ function generate() {
   act('generate', async () => {
     adopt(await api<AppState>('/plan/generate', 'POST', { revision: state.value!.revision }))
     selectedDay.value = -1
-    notify('本周计划已生成')
+    notify(plan.value?.engine === 'model' ? 'AI 已生成本周计划' : (plan.value?.modelMessage || '本周计划已生成'))
   })
 }
 function openFeedback(task: Task) {
@@ -235,8 +339,9 @@ function openFeedback(task: Task) {
     (item) => item.taskId === task.id && item.problemId === task.problemId,
   )
   feedback.value = previous
-    ? { outcome: previous.outcome, minutes: previous.minutes, note: previous.note }
-    : { outcome: 'independent', minutes: task.minutes, note: '' }
+    ? { outcome: previous.outcome, minutes: previous.minutes, note: previous.note,
+        editorialNotes: previous.editorialNotes ?? '', mistakeNote: previous.mistakeNote ?? '' }
+    : { outcome: 'independent', minutes: task.minutes, note: '', editorialNotes: '', mistakeNote: '' }
   modal.value = 'feedback'
 }
 function saveFeedback() {
@@ -292,6 +397,32 @@ function saveProfile() {
       }),
     )
     notify('个人设置已保存，可重新生成计划')
+  })
+}
+function resetAiDraft() {
+  const saved = state.value?.aiSettings
+  aiDraft.value = { baseUrl: saved?.baseUrl ?? '', model: saved?.model ?? '', apiKey: '' }
+}
+function saveAiSettings() {
+  act('ai-save', async () => {
+    const payload = { ...aiDraft.value }
+    aiDraft.value.apiKey = ''
+    adopt(await api<AppState>('/settings/ai', 'PUT', payload), false)
+    resetAiDraft()
+    notify('模型配置已保存在本机')
+  })
+}
+function testAiSettings() {
+  act('ai-test', async () => {
+    const result = await api<{ ok: boolean; message: string }>('/settings/ai/test', 'POST')
+    notify(result.message, !result.ok)
+  })
+}
+function clearAiSettings() {
+  act('ai-clear', async () => {
+    adopt(await api<AppState>('/settings/ai', 'DELETE'), false)
+    resetAiDraft()
+    notify('已清除本机保存的模型配置')
   })
 }
 function toggleTopic(name: string) {
@@ -406,7 +537,10 @@ function escapeModal(event: KeyboardEvent) {
   }
 }
 onMounted(() => {
-  load()
+  load().then(() => {
+    loadProfileModel()
+    if (page.value === 'review' || page.value === 'code') loadMemory()
+  })
   pollTimer = setInterval(pollSync, 1500)
   window.addEventListener('hashchange', handleHash)
   window.addEventListener('keydown', escapeModal)
@@ -614,7 +748,7 @@ onUnmounted(() => {
               <span class="metric-icon orange"><Target :size="20" /></span
               ><span
                 ><small>当前训练起点</small
-                ><strong>{{ workspace!.profile.level }}<em> CF 难度参考</em></strong></span
+                ><strong>{{ trainingLevel }}<em> CF 难度参考</em></strong></span
               >
             </div>
             <div>
@@ -743,6 +877,19 @@ onUnmounted(() => {
         </template>
 
         <template v-if="page === 'plan'">
+          <p v-if="workspace?.profile.competitionDate" class="notice">
+            <Target :size="16" />目标比赛日期 {{ workspace.profile.competitionDate }}
+          </p>
+          <section v-if="plan?.basis?.some(item => item.startsWith('训练前检查'))" class="notice">
+            <div><strong>训练前检查</strong>
+              <ul class="basis-list">
+                <li v-for="item in plan.basis.filter(item => item.startsWith('训练前检查'))" :key="item">
+                  {{ item.replace('训练前检查 · ', '') }}
+                </li>
+              </ul>
+            </div>
+          </section>
+          <TimedAssessment v-if="!state.demo" :key="state.username" :problems="problemMap" :sync-job="syncJob" @sync="synchronize" />
           <div class="page-heading">
             <div>
               <h1>把目标，安排进这一周。</h1>
@@ -777,6 +924,9 @@ onUnmounted(() => {
               </button>
             </div>
           </div>
+          <p v-if="plan?.modelMessage" class="notice" role="status">
+            <strong>{{ plan.engine === 'model' ? '模型生成' : '规则生成' }}</strong> {{ plan.modelMessage }}
+          </p>
           <div class="plan-layout">
             <section
               v-for="(day, index) in weekdays"
@@ -967,6 +1117,9 @@ onUnmounted(() => {
                     }}</span>
                   </div>
                   <p>{{ item.note || '这次记录了用时和完成情况。下次可以补充思路与卡点。' }}</p>
+                  <div v-if="item.causes && item.causes.length" class="cause-tags">
+                    <span v-for="cause in item.causes" :key="cause">{{ cause }}</span>
+                  </div>
                   <div class="task-meta">
                     <span>{{ problemMap[item.problemId]?.code }}</span
                     ><span class="icon-text"><Clock3 :size="12" />{{ item.minutes }} 分钟</span
@@ -1011,6 +1164,28 @@ onUnmounted(() => {
               <p class="panel-note">每次任务保留最新复盘。撤销计划调整时，已有复盘仍会保留。</p>
             </aside>
           </div>
+          <div>
+            <MemoryPanel
+              :observations="memoryData.observations"
+              :events="memoryData.events"
+              :busy="memoryBusy"
+              @correct="correctMemory"
+              @remove="removeMemory"
+              @add="addMemory"
+              @refresh="loadMemory"
+            />
+          </div>
+        </template>
+
+        <template v-if="page === 'ability'">
+          <AbilityAssessment :model="profileModel" :loading="profileLoading" :error="profileError" :demo="state.demo"
+            @refresh="loadProfileModel" @open-plan="navigate('plan')" />
+        </template>
+
+        <template v-if="page === 'code'">
+          <CodeWorkspace v-if="!state.demo" :key="state.username" :ai-configured="state.aiConfigured"
+            @notify="notify" @refresh="loadMemory" />
+          <p v-else class="notice">登录个人账号后可选择本地目录，使用私人代码工作区和教练对话。</p>
         </template>
 
         <template v-if="page === 'settings' && draft">
@@ -1037,14 +1212,11 @@ onUnmounted(() => {
                   /></label
                 ><label
                   >训练起点 <span class="field-hint">CF 难度参考</span
-                  ><select v-model.number="draft.level">
-                    <option
-                      v-for="level in [800, 1000, 1200, 1400, 1600]"
-                      :key="level"
-                      :value="level"
-                    >
-                      {{ level }}
-                    </option>
+                  ><input v-model.number="draft.level" type="number" min="1" step="1" required :disabled="!draft.manualLevel" />
+                    <span v-if="!draft.manualLevel">当前参考 {{ trainingLevel }}</span></label
+                ><label>难度来源<select v-model="draft.manualLevel">
+                    <option :value="false">跟随已同步的 CF Rating</option>
+                    <option :value="true">手动设置</option>
                   </select></label
                 >
                 <div class="field-label">想练习的专题</div>
@@ -1060,6 +1232,11 @@ onUnmounted(() => {
                     <Check v-if="draft.topics.includes(name)" :size="13" />{{ name }}
                   </button>
                 </div>
+                <label>目标比赛日期<input v-model="draft.competitionDate" type="date" /></label>
+                <label>荣誉与参赛经历<textarea v-model="draft.achievements" rows="3" maxlength="800"
+                  placeholder="可填写比赛名称、名次，以及你在个人赛或团队赛中的经历" />
+                  <span class="field-hint">自填背景供教练参考，能力等级仍依据训练记录。</span>
+                </label>
               </section>
               <section class="panel form-panel">
                 <h2>每周可用时间</h2>
@@ -1131,9 +1308,47 @@ onUnmounted(() => {
                   {{
                     state.aiConfigured
                       ? '模型生成后，会检查题目来源与时间预算。调用失败时使用规则方案。'
-                      : '当前按专题、难度、可用时间与反馈安排任务。模型服务需由项目维护者在后端配置。'
+                      : '当前按专题、难度、可用时间与反馈安排任务。'
                   }}
                 </p>
+                <p v-if="state.demo" class="panel-note">登录个人账号后可配置模型服务。</p>
+                <template v-else>
+                  <label>
+                    服务地址
+                    <input v-model.trim="aiDraft.baseUrl" maxlength="500"
+                      placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false"
+                      @keydown.enter.prevent="saveAiSettings" />
+                  </label>
+                  <label>
+                    模型名称
+                    <input v-model.trim="aiDraft.model" maxlength="160"
+                      placeholder="填写服务商提供的模型 ID" autocomplete="off" spellcheck="false"
+                      @keydown.enter.prevent="saveAiSettings" />
+                  </label>
+                  <label>
+                    API Key
+                    <input v-model.trim="aiDraft.apiKey" type="password" maxlength="1024"
+                      :placeholder="state.aiSettings.hasLocalKey ? '已保存，留空保留原 Key' : '输入 API Key'"
+                      autocomplete="new-password" spellcheck="false" @keydown.enter.prevent="saveAiSettings" />
+                  </label>
+                  <p v-if="state.aiSettings.unreadable" class="panel-note">本机配置无法读取，请重新填写或清除。</p>
+                  <p class="panel-note">
+                    Key 按账号加密保存在本机，保存后无法在页面查看。生成或调整周计划时，相关训练上下文会发给该服务，Key 用于认证。目录分析开启 AI 后会发送统计和代表证据。
+                  </p>
+                  <div class="ai-settings-actions">
+                    <button class="button primary" type="button" :disabled="!!busy" @click="saveAiSettings">
+                      {{ busy === 'ai-save' ? '正在保存' : '保存模型配置' }}
+                    </button>
+                    <button v-if="state.aiConfigured" class="button outline" type="button"
+                      :disabled="!!busy" @click="testAiSettings">
+                      {{ busy === 'ai-test' ? '正在测试' : '测试连接' }}
+                    </button>
+                    <button v-if="state.aiSettings.hasLocalKey || state.aiSettings.unreadable" class="button outline"
+                      type="button" :disabled="!!busy" @click="clearAiSettings">
+                      清除本机配置
+                    </button>
+                  </div>
+                </template>
               </section>
               <div class="source-note">
                 <Library :size="17" />
@@ -1208,7 +1423,12 @@ onUnmounted(() => {
                 maxlength="1500"
                 placeholder="例如：二分方向能判断，但左右边界还需要再练习。"
               /></label
-            ><button class="button primary full-width" :disabled="!!busy" type="submit">
+            >
+            <label>本次实际失误<textarea v-model="feedback.mistakeNote" rows="2" maxlength="400"
+              placeholder="例如：多组测试忘了清空数组。没有失误可以留空。" /></label>
+            <label>题解要点（选填）<textarea v-model="feedback.editorialNotes" rows="2" maxlength="1200"
+              placeholder="题目标签太宽时，可粘贴题解里的算法名称或做法。" /></label>
+            <button class="button primary full-width" :disabled="!!busy" type="submit">
               {{ busy === 'feedback' ? '正在保存' : '保存这次复盘' }}<Check :size="16" />
             </button></form
         ></template>
@@ -1249,6 +1469,17 @@ onUnmounted(() => {
               }}</span>
             </div>
             <p>{{ workspace!.proposal.reason }}</p>
+            <p v-if="workspace!.proposal.plan.timeEcho" class="proposal-time">
+              时间解析：{{ workspace!.proposal.plan.timeEcho }}
+            </p>
+            <ul
+              v-if="workspace!.proposal.basis && workspace!.proposal.basis.length"
+              class="basis-list"
+            >
+              <li v-for="(item, index) in workspace!.proposal.basis" :key="index">
+                <span>依据</span>{{ item }}
+              </li>
+            </ul>
             <div class="proposal-comparison">
               <div>
                 <small>当前计划</small
