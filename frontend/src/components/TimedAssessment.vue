@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { api } from '../api'
 import type { Problem, SyncJob } from '../types'
 
-defineProps<{ problems: Record<string, Problem>; syncJob: SyncJob }>()
+defineProps<{ problems: Record<string, Problem>; syncJob: SyncJob; ready?: boolean }>()
 const emit = defineEmits<{ sync: [] }>()
 type Result = { problemId: string; status: string; submissions: number; firstAcceptedSeconds: number | null }
 type Assessment = { id: string; handle: string; startedAt: number; deadline: number; endedAt: number | null; cancelled: boolean; reflection: string; problemIds: string[]; results: Result[] }
@@ -55,6 +55,9 @@ onUnmounted(() => clearInterval(timer))
       <strong v-if="current && seconds > 0">{{ duration(seconds) }}</strong>
     </div>
     <p v-if="error" role="alert">{{ error }}</p>
+    <p v-if="!ready" class="assessment-hint">
+      还没有可对账的 CF 记录。先到「CF 已做题」连接并同步账号，再开始短测。
+    </p>
     <ol v-if="current">
       <li v-for="id in current.problemIds" :key="id">
         <a v-if="problems[id]" :href="problems[id].url" target="_blank" rel="noopener noreferrer">
@@ -84,7 +87,7 @@ onUnmounted(() => clearInterval(timer))
         <button class="button outline" :disabled="busy || syncJob.status === 'running'" @click="emit('sync')">
           {{ syncJob.status === 'running' ? '正在同步' : '同步 CF 提交' }}
         </button>
-        <button class="button primary" :disabled="busy || syncJob.status === 'running'"
+        <button class="button primary" :disabled="busy || syncJob.status === 'running' || !ready"
           @click="update('/assessment', 'POST')">开始短测</button>
       </div>
     </template>
@@ -129,4 +132,5 @@ onUnmounted(() => clearInterval(timer))
 .assessment-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .assessment .button { justify-self: start; }
 .assessment [role="alert"] { color: #a34b2f; }
+.assessment-hint { font-size: 12px; color: #7a8aa2; line-height: 1.7; }
 </style>

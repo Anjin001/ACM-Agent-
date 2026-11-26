@@ -65,6 +65,8 @@ public class CoachStore {
                 db.update("INSERT INTO accounts(username,password_hash,demo) VALUES(?,?,?)", username, passwords.encode(password), demo);
                 Account account = accountByName(username);
                 Workspace state = demo ? demoWorkspace() : new Workspace();
+                // 新账号默认用用户名当昵称，避免所有新账号都显示“新同学”。
+                if (!demo) state.profile.name = username;
                 db.update("INSERT INTO workspaces(user_id,revision,payload) VALUES(?,0,?)", account.id(), encode(state));
                 return account;
             });

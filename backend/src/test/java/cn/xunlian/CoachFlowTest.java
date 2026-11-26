@@ -507,7 +507,10 @@ class CoachFlowTest {
         ((com.fasterxml.jackson.databind.node.ObjectNode) profile).put("name", "first-user");
         send(first, "PUT", "/api/profile", Map.of("revision", firstState.path("revision").asLong(), "profile", profile));
         assertThat(state(first).path("workspace").path("profile").path("name").asText()).isEqualTo("first-user");
-        assertThat(state(second).path("workspace").path("profile").path("name").asText()).isEqualTo("新同学");
+        // 新账号默认昵称取用户名，两个账号的昵称因此不会都停留在“新同学”。
+        assertThat(state(second).path("workspace").path("profile").path("name").asText())
+                .isEqualTo(state(second).path("username").asText())
+                .isNotEqualTo("first-user");
     }
 
     @Test

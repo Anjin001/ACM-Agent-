@@ -11,7 +11,7 @@ const rated = computed(() => areas.value.filter(area => area.level !== null).len
 
 <template>
   <div class="page-heading">
-    <div><h1>能力评估</h1><p>查看各算法大类的训练水平、刷题覆盖和限时表现。</p></div>
+    <div><h1>看清长板，也看清缺口。</h1><p>按算法大类统计独立完成率、样本量与近期变化，CF 提交和短测结果作为旁证。</p></div>
     <button class="button outline" type="button" :disabled="loading" @click="$emit('refresh')">
       {{ loading ? '正在更新' : '刷新评估' }}
     </button>
@@ -55,6 +55,8 @@ const rated = computed(() => areas.value.filter(area => area.level !== null).len
       </details>
       <button v-if="rated < areas.length" class="button outline" type="button" @click="$emit('openPlan')">去周计划训练</button>
     </section>
+
+    <slot />
 
     <section class="panel ability-panel">
       <h2>算法细项与变化</h2>

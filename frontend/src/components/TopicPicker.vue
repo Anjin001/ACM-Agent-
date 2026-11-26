@@ -6,6 +6,8 @@ const props = defineProps<{ topics: Topic[]; modelValue: string[] }>()
 const emit = defineEmits<{ 'update:modelValue': [names: string[]] }>()
 const group = ref('全部')
 const query = ref('')
+const limit = 30
+const atLimit = computed(() => props.modelValue.length >= limit)
 const groups = computed(() => ['全部', ...new Set(props.topics.map((topic) => topic.category))])
 const visible = computed(() =>
   props.topics.filter(
@@ -48,13 +50,15 @@ function toggle(name: string) {
         type="button"
         :class="{ chosen: modelValue.includes(topic.name) }"
         :aria-pressed="modelValue.includes(topic.name)"
+        :disabled="atLimit && !modelValue.includes(topic.name)"
         @click="toggle(topic.name)"
       >
         <Check v-if="modelValue.includes(topic.name)" :size="13" />{{ topic.name }}
       </button>
     </div>
-    <p class="panel-note">
-      已选 {{ modelValue.length }} 个专题，最多 30 个。分类总专题会同时覆盖所属的细分算法。
+    <p class="panel-note" :class="{ 'limit-note': atLimit }">
+      已选 {{ modelValue.length }} / {{ limit }} 个专题。分类总专题会同时覆盖所属的细分算法。
+      <template v-if="atLimit">已达到上限，先取消一个再添加。</template>
     </p>
   </div>
 </template>

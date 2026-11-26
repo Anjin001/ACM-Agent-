@@ -86,7 +86,7 @@ public class CodeforcesClient {
             long coverageStart = Long.MAX_VALUE;
             for (int page = 0; ; page++) {
                 checkCancelled(job);
-                job.message = (job.mode.equals("full") ? "正在读取完整历史" : "正在更新最近记录") + "，第 " + (page + 1) + " 页，已读取 " + job.readCount + " 条";
+                job.message = (job.mode.equals("full") ? "正在读取完整历史" : "正在更新最近记录") + "，第 " + (page + 1) + " 页";
                 JsonNode rows = request("user.status?handle=" + URLEncoder.encode(handle, StandardCharsets.UTF_8) + "&from=" + (page * 1000L + 1) + "&count=1000");
                 if (!rows.isArray()) throw new IllegalStateException("CF 提交记录格式异常，请稍后重试");
                 checkCancelled(job);

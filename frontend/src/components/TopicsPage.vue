@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { Search, ChevronRight, BookOpen, ArrowRight, Plus, Check } from 'lucide-vue-next'
 import ProblemLibrary from './ProblemLibrary.vue'
 import type { AppState } from '../types'
@@ -26,6 +26,14 @@ const topics = computed(() =>
 const detail = computed(
   () => props.state.topics.find((topic) => topic.name === selected.value) || props.state.topics[0],
 )
+// 窄屏时详情在目录下方，选中后把它滚进视野，避免“点了没反应”。
+async function select(name: string) {
+  selected.value = name
+  await nextTick()
+  if (window.innerWidth <= 1100) {
+    document.querySelector('.topic-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
 const routes = [
   {
     name: '基础起步',
@@ -61,6 +69,7 @@ const routes = [
       </button>
     </article>
   </div>
+  <div class="topic-browser">
   <section class="panel topic-directory">
     <div class="topic-group-tabs">
       <button
@@ -83,7 +92,7 @@ const routes = [
         v-for="topic in topics"
         :key="topic.name"
         :class="{ active: selected === topic.name }"
-        @click="selected = topic.name"
+        @click="select(topic.name)"
       >
         <span
           >{{ topic.name }}<small>{{ topic.category }}</small></span
@@ -122,7 +131,7 @@ const routes = [
         v-for="name in detail.prerequisites"
         :key="name"
         class="tag"
-        @click="selected = name"
+        @click="select(name)"
       >
         {{ name }}</button
       ><span v-if="!detail.prerequisites.length">可从这里开始</span>
@@ -134,6 +143,7 @@ const routes = [
       </ul>
     </div>
   </section>
+  </div>
   <div v-if="detail" class="section-heading">
     <h2>{{ detail.name }} · 对应练习</h2>
     <span>细分算法由人工精选标注，CF 标签按原平台信息映射</span>

@@ -79,10 +79,11 @@ function date(value: string) {
       <RefreshCw v-if="job.status === 'running'" :size="16" class="spinning" /><CheckCircle2
         v-else
         :size="16"
-      /><span
+      />
+      <span
         >{{ job.message
-        }}<small v-if="job.status === 'running'">
-          已读取 {{ job.pages }} 页 / {{ job.readCount.toLocaleString() }} 条</small
+        }}<small v-if="job.status === 'running'" class="sync-progress">
+          已完成 {{ job.pages }} 页 · 已读取 {{ job.readCount.toLocaleString() }} 条提交</small
         ></span
       >
     </div>
