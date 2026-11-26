@@ -1,9 +1,12 @@
 export interface Profile {
   name: string
   handle: string
+  competitionDate: string
+  achievements: string
   goal: string
   topics: string[]
   level: number
+  manualLevel: boolean
   dailyMinutes: number[]
 }
 export interface Problem {
@@ -17,6 +20,9 @@ export interface Problem {
   difficulty: string
   minutes: number
   provenance: string
+  sourceTags: string[]
+  minLevel: number
+  maxLevel: number
 }
 export interface Task {
   id: string
@@ -32,6 +38,9 @@ export interface Plan {
   version: number
   engine: string
   explanation: string
+  modelMessage?: string
+  basis?: string[]
+  timeEcho?: string
   tasks: Task[]
 }
 export interface Feedback {
@@ -42,6 +51,9 @@ export interface Feedback {
   minutes: number
   note: string
   createdAt: string
+  causes?: string[]
+  editorialNotes?: string
+  mistakeNote?: string
 }
 export interface Proposal {
   id: string
@@ -50,10 +62,15 @@ export interface Proposal {
   reason: string
   engine: string
   modelMessage: string
+  basis?: string[]
 }
 export interface SyncJob {
   status: string
   message: string
+  handle: string
+  mode: string
+  pages: number
+  readCount: number
 }
 export interface Workspace {
   profile: Profile
@@ -68,7 +85,44 @@ export interface Workspace {
     solvedCount: number
     truncated: boolean
     rating: number | null
+    fullHistory: boolean
+    lastFullSyncAt: string | null
+    lastSubmissionId: number
   }
+  learningHints: Record<string, number>
+  assessments: Assessment[]
+  challenges: ChallengeResult[]
+}
+
+export interface AssessmentItem {
+  questionId: string
+  topic: string
+  chosen: number
+  answer: number
+  correct: boolean
+  hintLevel: number
+  explanation: string
+}
+export interface Assessment {
+  id: string
+  route: string
+  correct: number
+  total: number
+  createdAt: string
+  items: AssessmentItem[]
+  suggestedTopics: string[]
+}
+export interface ChallengeResult {
+  id: string
+  challengeId: string
+  numbers: number[]
+  target: number | null
+  buggyOutput: string
+  referenceOutput: string
+  counterexample: boolean
+  correctFix: boolean
+  explanation: string
+  createdAt: string
 }
 export interface AppState {
   revision: number
@@ -78,5 +132,152 @@ export interface AppState {
   problems: Problem[]
   solvedIds: string[]
   aiConfigured: boolean
+  aiSettings: { baseUrl: string; model: string; hasLocalKey: boolean; unreadable: boolean }
   syncJob: SyncJob
+  topics: Topic[]
+  catalogTotal: number
+  cfSolvedIds: string[]
+}
+
+export interface Topic {
+  name: string
+  category: string
+  summary: string
+  prerequisites: string[]
+  steps: string[]
+  examples: string[]
+}
+export interface ProblemRow {
+  problem: Problem
+  completion: string
+  firstAcceptedAt: number | null
+  lastAcceptedAt: number | null
+  acceptedSubmissions: number
+}
+export interface ProblemPage {
+  items: ProblemRow[]
+  total: number
+  page: number
+  pageSize: number
+  pages: number
+}
+
+export interface Observation {
+  id: string
+  kind: 'goal' | 'error_pattern' | 'code_issue' | 'strength' | 'constraint' | string
+  statement: string
+  detail: string | null
+  sourceType: 'feedback' | 'review' | 'profile' | 'sync' | 'manual' | string
+  sourceId: string | null
+  weight: number
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MemoryEvent {
+  id: string
+  type: string
+  summary: string
+  createdAt: string
+}
+
+export interface MemoryPayload {
+  observations: Observation[]
+  events: MemoryEvent[]
+}
+
+export interface Evidence {
+  problemId: string
+  code: string
+  title: string
+  outcome: string
+  minutes: number
+  estimate: number
+  date: string
+  tags: string[]
+}
+
+export interface TopicStat {
+  name: string
+  level: number | null
+  samples: number
+  independent: number
+  editorial: number
+  stuck: number
+  independentRate: number
+  avgRating: number | null
+  avgMinutes: number
+  avgEstimate: number
+  bias: number
+  evidence: Evidence[]
+}
+
+export interface BucketStat {
+  label: string
+  minRating: number | null
+  maxRating: number | null
+  attempts: number
+  independent: number
+  rate: number
+}
+
+export interface AbilityArea {
+  name: string
+  topics: string[]
+  level: number | null
+  samples: number
+  independent: number
+  codeforcesAttempted: number
+  codeforcesAccepted: number
+}
+
+export interface ProfileModel {
+  abilityAreas: AbilityArea[]
+  skillGroups: { name: string; skills: { name: string; recent: number; recentIndependent: number; previous: number; previousIndependent: number; accepted: number; source: string }[] }[]
+  recurringMistakes: { name: string; count: number; lastProblem: string; lastNote: string; reminder: string }[]
+  codeforcesCoverage: { topic: string; attempted: number; accepted: number }[]
+  codeforcesCoverageTruncated: boolean
+  timedEvidence: { problemId: string; title: string; status: string; submissions: number; firstAcceptedSeconds: number | null; assessedAt: number }[]
+  topics: TopicStat[]
+  buckets: BucketStat[]
+  samples: number
+  independentRate: number
+  trainedMinutes: number
+  strengths: string[]
+  weaknesses: string[]
+  summary: string
+  engine: string
+  basis: string[]
+}
+
+export interface ReviewedFile {
+  name: string
+  lines: number
+  chars: number
+}
+
+export interface ReviewFinding {
+  file: string
+  line: number
+  severity: 'high' | 'medium' | 'low' | string
+  kind: string
+  message: string
+  suggestion: string
+  excerpt: string
+}
+
+export interface CodeReview {
+  id: string
+  taskId: string | null
+  problemId: string | null
+  problemTitle: string | null
+  engine: string
+  createdAt: string
+  files: ReviewedFile[]
+  findings: ReviewFinding[]
+  summary: string
+  high: number
+  medium: number
+  low: number
 }

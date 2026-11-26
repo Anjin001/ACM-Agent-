@@ -1,12 +1,12 @@
-# ACM-Agent- · 循练 ACM 训练工作台
+# ACM-Agent- · 循练编程与算法成长平台
 
-面向软件项目管理课程的可运行首版。围绕训练目标、公开做题记录、周计划和复盘调整建立完整流程。
+面向软件项目管理课程的本地迭代版。覆盖专题学习、理解题诊断、代码验证、公开做题记录、周计划与复盘调整，并包含能力评估、限时短测、教练记忆与本地代码工作区。
 
 ## 快速启动
 
 在 Windows 双击根目录的 `启动.bat`，然后访问 [训练工作台](http://127.0.0.1:18080)。首次进入课程演示空间，可以从左下角创建独立账号。
 
-首次构建需要联网，要求 Node.js 22.12+、npm、JDK 17+。脚本会寻找 `JAVA_HOME` 或常见安装目录中的 JDK，优先使用已有 Maven，缺少 Maven 时下载到用户缓存。首次构建会安装前端依赖、构建页面并运行后端测试。
+首次构建需要联网，要求 Node.js 22.12+、npm、JDK 17+。脚本会寻找 `JAVA_HOME` 或常见安装目录中的 JDK，优先使用已有 Maven，缺少 Maven 时下载到用户缓存。首次构建会安装前端依赖、构建页面，并运行 28 项后端测试（19 项接口与教练流程、4 项 CF 同步、5 项中文自然语言处理）。`frontend/node_modules` 存在且 `package-lock.json` 未变时会跳过依赖安装。
 
 ```powershell
 # 构建并运行测试
@@ -16,24 +16,39 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Build.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start.ps1
 ```
 
-修改源代码后重新执行构建。运行窗口中按 Ctrl+C 停止。数据库保存在项目根目录的 `data/`，请保留该目录以继续使用已有账号和计划。
+修改源代码后重新执行构建。运行窗口中按 Ctrl+C 停止。数据保存在项目根目录的 `data/xunlian.db`，这是 SQLite 单文件库，同目录下还会出现 `xunlian.db-wal` 与 `xunlian.db-shm` 两个伴随文件。请保留整个 `data/` 目录以继续使用已有账号和计划；删掉它并重新启动会回到初始演示数据。
+
+默认端口为 18080。如该端口已被占用，设置 `$env:XUNLIAN_PORT = '18081'` 后重新执行 `Start.ps1`；脚本会在启动前检查端口并给出占用提示。仅本机访问，需要局域网演示时设置 `$env:SERVER_ADDRESS = '0.0.0.0'`。
 
 ## 已实现的流程
 
 1. 默认演示空间包含虚构的学员、训练安排和两条复盘，页面明确标记演示来源。
 2. 注册账号或登录后，拥有独立的训练目标、CF handle、时间预算、计划和复盘。密码使用 BCrypt，登录状态使用 HttpOnly 会话 Cookie。
 3. 在个人设置保存 CF handle，点击同步。后端通过 CF 官方 API 读取公开信息和提交记录，按两秒以上的间隔请求。
-4. 同步最多最近 10000 条提交，页面标明截断范围。结果按提交 ID 去重，并在一次数据库事务中保存。完整同步失败时保留上次成功结果。
+4. 首次同步自动分页读取完整公开提交历史。后续快速同步刷新最新一页及新增记录，完整重同步用于刷新较早的重判结果。支持进度查看与取消，失败或取消保留上次成功结果。
 5. 生成本周计划，按专题、难度范围和本周剩余日期排期，排除已知通过题与已记录完成题。已有反馈任务保留。
 6. 跳转 CF 或洛谷原题练习，在任务中记录独立完成、参考题解或仍然卡住，以及实际用时和文字复盘。
 7. 生成调整方案，比较前后题量、时间及具体新任务。接受后保存计划版本，可以撤销，同时保留新增复盘。
-8. 题库可搜索、按平台和专题筛选。计划可导出 JSON，方便课堂检查。
+8. 题库支持搜索、分组专题、CF 难度及完成状态筛选，后端分页；专题练习与 CF 已通过列表均可跳转原题。计划可导出 JSON，方便课堂检查。
+9. 中文自然语言直接说时间：`这周六抽半小时，周四没时间` 会解析成具体槽位，界面回显“周六 30 分钟；周四休息”。复盘文字会自动抽取错因（边界、复杂度、审题、实现、算法、时间），写入能力画像与教练记忆。
+10. 能力画像按专题给出 1～5 级、样本数、独立完成率、用时偏差和逐条证据；难度分布按 200 分一档统计。
+11. 教练记忆存在 SQLite 的 `observations` 表中，每条都带来源（复盘 / 审查 / 设置 / 手动）。用户可以更正、停用或删除；生成调整方案时会引用这些依据，并在方案里列出“依据”清单。
+12. 代码审查支持在本机选 C++ 文件、预览行号、勾选要提交的片段。后端先跑规则检查（整数中点溢出、memset 误用、`%d` 读 long long、浮点相等、循环内 endl、数组上界、复杂度层数等），配置模型后再叠加语义审查。源码不入库，只保存文件名、行数与结论。
+13. 新增专题与路线页面，提供前置知识、学习检查点及对应练习，可将路线或细分专题加入训练方向。
+14. 新增两组共 12 道理解题诊断，逐级提示使用情况随结果保存，并可据此设置训练专题。
+15. 新增二分边界、整数溢出和整数除法三组预设代码验证挑战，支持提交反例、比较预设程序与参考结果，并保存解释。
+
+个人设置可记录目标比赛日期与自报荣誉或参赛经历。训练计划页展示目标日期。自报经历作为背景，能力等级继续依据训练证据。
 
 ## AI 配置
 
 默认规则教练可直接使用，界面会显示“规则生成”。规则模式依据保存的复盘确定巩固专题，并支持“周六30分钟”“周四没时间”“每天30分钟”等时间条件。
 
-要启用大模型，在启动服务的终端中设置以下环境变量。使用提供 Chat Completions 兼容接口的服务，密钥只进入后端进程。
+在本机打开循练并登录个人账号，进入「个人设置 → 训练教练」，填写 Chat Completions 兼容服务的 Base URL、模型名称和 API Key。保存后即时生效，打开周计划生成一次调整方案可检查调用结果。远程服务地址使用 HTTPS，本机模型服务可使用 HTTP。
+
+个人配置按账号加密保存在本地 `data/ai-settings/`，与业务数据库分开。接口只返回地址、模型及是否已保存 Key。请保护整个目录的文件访问权限，能够读取其中所有文件的本机进程也能解密配置。页面支持替换或清除配置；更换服务地址时须重新填写 Key。
+
+也可以在启动服务的终端设置下列环境变量，作为没有个人配置时的默认服务。
 
 ```powershell
 $env:AI_BASE_URL = 'https://your-provider.example/v1'
@@ -42,17 +57,21 @@ $env:AI_MODEL = 'your-model'
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start.ps1
 ```
 
-模型会收到训练目标、近期复盘、时间预算和候选题。后端逐项检查候选 ID、重复题、日期、最少用时和日预算。超时、接口错误、格式错误或校验失败时展示规则方案及回退状态。“已配置”只代表环境变量存在，成功调用由每次方案的生成状态体现。
+模型会收到训练目标、能力画像摘要、教练记忆中的有效观察、近期复盘、时间预算和候选题。后端逐项检查候选 ID、重复题、日期、最少用时和日预算，并校验模型给出的“依据”是否真的出自记忆或画像，编造的引用会被丢弃。超时、接口错误、格式错误或校验失败时展示规则方案及回退状态。代码审查走同一条通道，只发送用户勾选的片段。
 
 ## 数据与技术结构
 
-- 前端使用 Vue 3、TypeScript、Vite 与 Lucide 图标。五个页面覆盖概览、周计划、题库、复盘与设置。
-- 首版面向基础训练，支持 800～1600 的 CF 难度起点，结合人工精选题安排练习。
-- 后端使用 Spring Boot 3.5.7、Java 17 API、JdbcTemplate。默认使用 H2 文件库，并附 MySQL 驱动。
+- 前端使用 Vue 3、TypeScript、Vite 与 Lucide 图标。页面覆盖概览、诊断验证、专题路线、题库、CF 已做题、周计划、能力评估、复盘、教练工作台与设置。
+- 训练起点支持 1～3500，默认跟随已同步的 CF Rating；结合原平台评分与人工精选练习安排任务，不同平台的难度分别保留。
+- 后端使用 Spring Boot 3.5.7、Java 17 API、JdbcTemplate。默认使用 SQLite 单文件库（`data/xunlian.db`），另附 MySQL 结构，可用 `DB_DRIVER`、`DB_SCHEMA` 切换。
 - `accounts` 保存账号，`problems` 保存题目，`cf_submissions` 保存提交记录。`workspaces` 将偏好、计划、反馈与版本作为 JSON 聚合保存，使用 revision 乐观锁防止并发覆盖。
-- 计划和反馈采用聚合存储，后续可以按课程数据库设计要求拆成独立表。
-- CF 题库包含 2026-11-06 从官方 API 获取的 96 道公开元数据快照。18 道洛谷题为人工精选，阶段和用时由项目方整理，原题详情以原平台为准。
+- `observations` 保存教练记忆（目标、易错点、代码问题、优势、约束），`training_events` 保存计划生成、复盘、调整、审查等事件，`code_reviews` 保存审查结论。
+- 计划、反馈、诊断与挑战结果采用聚合存储，新增字段兼容已有工作区数据；题目查询使用内存目录与后端分页，工作区接口仅返回当前计划及复盘引用的题目。
+- 排期用时按同专题历史「实际用时 / 估计用时」的中位数校准，样本不足时回退到题库估计值。
+- 中文处理是自实现的轻量方案：中文数字归一、星期与相对日期槽位、否定与程度修饰，配合正则与词典，不引入分词库。`backend/src/test/java/cn/xunlian/NlpTest.java` 是这部分语料的回归测试。
+- 题库包含 2026-11-12 的 11511 道 CF 官方公开题目元数据和 71 道洛谷精选题，共 11582 道；84 个专题覆盖基础、搜索、动态规划、数据结构、图论、树算法、数学、计算几何、字符串与进阶。洛谷名称为人工整理的训练主题，难度与详情以原题为准。
 - CF 难度与洛谷难度分别保存。训练用时是排期估计，实际用时来自反馈。CF AC 状态单独展示，独立完成情况由本人反馈。
+- 同步可补充快照外的题目，因此本机目录总数可能高于内置快照数量。旧版已通过记录缺少题目元数据时，已做题列表仍显示题号、通过日期和原题入口；完整同步后补齐详情。
 - handle 关联用于查询公开记录，尚未验证账号所有权。演示空间为本机共享示例，独立账号拥有独立工作区。
 
 前端开发时分别启动后端和前端。
@@ -78,16 +97,96 @@ node scripts/smoke.mjs
 
 当前验收证据见 `docs/验收记录.md`。该记录区分已执行检查和后续需要验证的内容。
 
-## 使用 MySQL
+## 接口一览
 
-先创建 UTF-8 数据库，再设置连接信息。首次启动自动建立四张表。切换数据库后会使用新数据库中的记录，原 H2 数据需要另行迁移。
+全部接口在 `/api` 下，返回 JSON。会改数据的接口都要求带上当前的 `revision`，不一致时返回 409 并提示刷新，避免两个标签页互相覆盖。
+
+| 分组 | 接口 | 说明 |
+| --- | --- | --- |
+| 会话 | `GET /health` | 返回版本号，用于启动探活 |
+| | `POST /auth/demo`、`/auth/register`、`/auth/login` | 登录后下发 HttpOnly 会话 Cookie |
+| | `GET /bootstrap`、`GET /state` | 一次取回工作区、题库、已通过题与同步状态 |
+| 设置与同步 | `PUT /profile` | 保存目标、handle、每日时间预算 |
+| | `POST /sync`、`GET /sync` | 启动 CF 同步任务、查询任务进度 |
+| 计划 | `POST /plan/generate` | 按专题与剩余日期生成本周计划 |
+| | `POST /plan/proposal` | 按自然语言指令生成调整方案（不落库） |
+| | `POST /plan/accept`、`POST /plan/undo` | 应用方案、撤销上一次计划修改 |
+| 复盘与画像 | `POST /feedback` | 记录完成情况、用时与文字复盘，同时抽取错因 |
+| | `GET /profile/model` | 按专题返回等级、样本、独立完成率、证据与难度分布 |
+| 教练记忆 | `GET /memory`、`POST /memory` | 读取观察与事件、手动补充一条观察 |
+| | `PATCH /memory/{id}`、`DELETE /memory/{id}` | 更正或停用、删除某条观察 |
+| 代码审查 | `POST /code/review` | 提交选中片段，返回问题清单与审查记录 |
+| | `GET /code/review` | 读取历史审查记录 |
+
+`POST /memory` 与 `PATCH /memory/{id}` 返回的是整表观察加事件列表，前端拿到后直接覆盖，不需要本地拼装。这一点在 `scripts/smoke.mjs` 与 `CoachFlowTest` 里都有断言守着——早先返回单条时，界面做过一次操作就会把列表清空。
+
+## 数据库
+
+### 默认：SQLite 单文件库
+
+不需要安装数据库服务，也不需要账号密码。首次启动自动建表并写入演示数据，之后的读写都在 `data/xunlian.db` 一个文件里完成。数据层只用 `JdbcTemplate` 与手写 SQL，没有引入 JPA 或 ORM。
+
+连接参数在 `backend/src/main/resources/application.properties`，每一项都可以用环境变量覆盖：
+
+```properties
+spring.datasource.url=${DB_URL:jdbc:sqlite:./data/xunlian.db?journal_mode=WAL&busy_timeout=5000&foreign_keys=on}
+spring.datasource.driver-class-name=${DB_DRIVER:org.sqlite.JDBC}
+spring.datasource.hikari.maximum-pool-size=${DB_POOL:4}
+spring.sql.init.schema-locations=${DB_SCHEMA:classpath:schema.sql}
+```
+
+连接串上三个参数各有用途，缺一项就会在特定场景出问题：
+
+- `journal_mode=WAL`：写事务不再阻塞读。页面一边刷新列表一边点同步时，读请求不会卡住。
+- `busy_timeout=5000`：写冲突时最多等待 5 秒再放弃。默认行为是立刻抛 `SQLITE_BUSY`，在“点得快一点”就会撞上。
+- `foreign_keys=on`：SQLite 的外键约束默认是关闭的，必须每个连接显式打开。
+
+`DB_POOL` 默认 4 而不是常见的 10：SQLite 同一时刻只允许一个写事务，连接开太多只会把冲突从数据库内部推成线程排队，反而更难排查。
+
+SQLite 不会自动创建目录，所以在全新检出（`data/` 不存在）时直接连库会失败，报 `path to './data/xunlian.db' ... does not exist`。`CoachApplication.main` 在启动 Spring 之前先按 `DB_URL` 解析出文件路径、剥掉 `?` 后面的查询参数、跳过 `:memory:` 与 `file:` 形式，再用 `Files.createDirectories` 把父目录建好。`data/` 已被 `.gitignore` 排除，不会误提交个人数据。
+
+表结构在 `backend/src/main/resources/schema.sql`，全部是 `CREATE TABLE IF NOT EXISTS`，可重复执行。七张表：
+
+| 表 | 内容 |
+| --- | --- |
+| `accounts` | 账号、BCrypt 密码摘要、是否演示账号 |
+| `workspaces` | 训练目标、计划、复盘、方案聚合为 JSON 保存，靠 `revision` 列做乐观锁 |
+| `problems` | 题库元数据，CF 与洛谷字段分开存 |
+| `cf_submissions` | CF 提交记录，按提交 ID 去重 |
+| `observations` | 教练记忆，带出处（`source_type`/`source_id`）与权重 |
+| `training_events` | 训练事件时间线 |
+| `code_reviews` | 审查结论，只存文件名、行数与字符数，不存源码 |
+
+教练记忆的写入用 upsert 而不是先查后插：
+
+```sql
+INSERT INTO observations(...) VALUES(...)
+ON CONFLICT(user_id, kind, statement) DO UPDATE SET
+  weight = observations.weight + excluded.weight,
+  updated_at = excluded.updated_at
+```
+
+同一句判断再次出现时累加权重，`(user_id, kind, statement)` 上的唯一索引保证不会留下重复行。这是 SQLite 3.24 起支持的语法；`MemoryStore` 会看驱动名，MySQL 下自动换成语义等价的 `ON DUPLICATE KEY UPDATE`。
+
+需要重置演示数据时，停止服务后删除 `data/` 目录再启动即可。
+
+WAL 模式下最近的写入先落在 `xunlian.db-wal`，主库文件会长时间停留在很小的体积（刚启动时可能只有 4 KB，而 `-wal` 有 1 MB 以上）。所以要备份或换机器，请把三个文件一起拷，或者先停掉服务让 SQLite 做一次 checkpoint，只拷 `xunlian.db` 会丢掉最近的改动。
+
+### 切换到 MySQL
+
+先创建 UTF-8 数据库，再设置连接信息。首次启动自动建表，表结构在 `schema-mysql.sql`，与 SQLite 版字段一致，只是类型和 upsert 写法不同。
 
 ```powershell
 $env:DB_URL = 'jdbc:mysql://127.0.0.1:3306/xunlian?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai'
+$env:DB_DRIVER = 'com.mysql.cj.jdbc.Driver'
+$env:DB_SCHEMA = 'classpath:schema-mysql.sql'
 $env:DB_USER = 'your-db-user'
 $env:DB_PASSWORD = 'your-db-password'
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start.ps1
 ```
+
+`DB_SCHEMA` 必须跟着一起切，否则会把 SQLite 方言的 DDL（`INTEGER PRIMARY KEY AUTOINCREMENT` 等）发到 MySQL。两个驱动都在 `pom.xml` 里，不需要改代码。切换数据库后会使用新库中的记录，原 SQLite 数据需要另行迁移。
+
 
 ## 对接资料
 
@@ -95,4 +194,24 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start.ps1
 - [CF API 请求频率与公开数据说明](https://codeforces.com/apiHelp/?locale=en)
 - [洛谷开放平台官方介绍](https://help.luogu.com.cn/about-us)
 
-洛谷采用原题跳转和手动反馈。完整做题历史自动同步、教练端、集训队管理和学习效果长期评价可以纳入后续迭代。
+洛谷采用原题跳转和手动反馈。教练端、集训队管理和学习效果长期评价可以纳入后续迭代。当前学习路线用于设置训练方向，知识点建议和诊断结果以理解题记录呈现。预设代码验证依据固定程序执行结果，文字解释作为个人复盘保存。真实模型仍需配置服务后联调，完整工具调用 Agent、内容管理后台和自由代码评测属于方案中的后续工作。
+
+## 更新题库
+
+运行 `node scripts/seed-catalog.mjs` 可从 CF 官方 API 刷新快照。也可以传入已下载的官方 JSON 文件路径。`scripts/topics.mjs` 是专题和洛谷精选练习的统一数据源。刷新后重新构建，已有个人记录会保留。
+
+## 版本来源与合并说明
+
+本仓库由 `soft/` 下的五个分支快照合并而成，合并过程保留了每个分支的独立提交历史（`git log --graph` 可查）：
+
+| 来源目录 | 主要内容 | 合并去向 |
+| --- | --- | --- |
+| `ACM-Agent--main` | 首版骨架：账号、计划、反馈、调整、撤销 | 作为合并基线 |
+| `ACM-Agent--sqlitwork` | SQLite 存储、教练记忆、能力画像、代码审查规则引擎 | 已包含在 CLY 中，作为基线分支保留 |
+| `ACM-Agent--CLY` | 能力评估、限时短测、代码工作区、本地模型配置 | 合并主干 |
+| `ACM-Agent--feat-gan-chenhua-acm-training` | 题库快照（11580 题）、84 个专题、诊断理解题、代码验证挑战、CF 完整/增量同步 | 并入主干：题库按 `id` 取并集（新增 2 道洛谷精选题），接口、导航、设置页逐一合并 |
+| `ACM-Agent--feat-local-code-memory` | 独立 `code-review/` 本地代码记忆应用 | 整体并入，路径与 Node 版本要求已调整 |
+
+合并中人工处理的冲突集中在：`CoachController`（接口取并集）、`Models`（工作区字段取并集）、`Planner`（候选过滤改为动态专题 + 等级区间）、`CodeforcesClient`（采用完整/增量同步并补写覆盖时间字段）、`App.vue`（导航与页面取并集，专题选择改为 `TopicPicker`）、`catalog.json`（按 id 合并 11582 题）。测试侧把 `CodeforcesSyncTest` 从 H2 切到与生产一致的 SQLite 临时库。
+
+验证结果：前端 `vue-tsc` 与 `vite build` 通过；后端 `mvn verify` 通过（28 项测试，0 失败）；打包后的 JAR 实际启动后，`/api/bootstrap`、`/api/problems`、`/api/learning`、`/api/memory`、`/api/profile/model`、`/api/plan/generate` 均返回 200，题库 11582 道、84 个专题；`code-review` 的 9 项测试全部通过。详见 `docs/验收记录.md` 的「合并版本复验」一节。

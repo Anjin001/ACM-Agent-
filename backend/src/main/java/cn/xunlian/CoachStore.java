@@ -29,6 +29,8 @@ public class CoachStore {
     private final ObjectMapper json;
     private final TransactionTemplate tx;
     private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder();
+    private volatile List<Problem> catalog = List.of();
+    private volatile Map<String, Problem> catalogById = Map.of();
 
     public CoachStore(JdbcTemplate db, ObjectMapper json, TransactionTemplate tx) {
         this.db = db;
@@ -63,11 +65,19 @@ public class CoachStore {
                 db.update("INSERT INTO accounts(username,password_hash,demo) VALUES(?,?,?)", username, passwords.encode(password), demo);
                 Account account = accountByName(username);
                 Workspace state = demo ? demoWorkspace() : new Workspace();
+                // 新账号默认用用户名当昵称，避免所有新账号都显示“新同学”。
+                if (!demo) state.profile.name = username;
                 db.update("INSERT INTO workspaces(user_id,revision,payload) VALUES(?,0,?)", account.id(), encode(state));
                 return account;
             });
         } catch (DuplicateKeyException ex) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "用户名已被使用");
+        } catch (org.springframework.dao.DataAccessException ex) {
+            // SQLite 的唯一约束不一定被翻译成 DuplicateKeyException，这里兜住同一语义。
+            if (String.valueOf(ex.getMessage()).contains("UNIQUE")) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "用户名已被使用");
+            }
+            throw ex;
         }
     }
 
@@ -88,14 +98,97 @@ public class CoachStore {
     public synchronized void saveProblems(List<Problem> problems) {
         Set<String> known = new HashSet<>(db.queryForList("SELECT id FROM problems", String.class));
         List<Problem> fresh = problems.stream().filter(problem -> !known.contains(problem.id)).toList();
-        db.batchUpdate("INSERT INTO problems(id,payload) VALUES(?,?)", fresh, 500, (ps, problem) -> {
-            ps.setString(1, problem.id);
-            ps.setString(2, encode(problem));
+        List<Problem> existing = problems.stream().filter(problem -> known.contains(problem.id)).toList();
+        tx.executeWithoutResult(status -> {
+            db.batchUpdate("INSERT INTO problems(id,payload) VALUES(?,?)", fresh, 500, (ps, problem) -> {
+                ps.setString(1, problem.id);
+                ps.setString(2, encode(problem));
+            });
+            db.batchUpdate("UPDATE problems SET payload=? WHERE id=?", existing, 500, (ps, problem) -> {
+                ps.setString(1, encode(problem));
+                ps.setString(2, problem.id);
+            });
         });
+        List<Problem> loaded = db.query("SELECT payload FROM problems ORDER BY id", (rs, row) -> decode(rs.getString(1), Problem.class));
+        Map<String, Problem> byId = new LinkedHashMap<>();
+        loaded.forEach(problem -> byId.put(problem.id, problem));
+        catalogById = Collections.unmodifiableMap(byId);
+        catalog = List.copyOf(loaded);
     }
 
     public List<Problem> problems() {
-        return db.query("SELECT payload FROM problems", (rs, row) -> decode(rs.getString(1), Problem.class));
+        return catalog;
+    }
+
+    public Problem problem(String id) { return catalogById.get(id); }
+
+    public List<Problem> referencedProblems(Workspace workspace) {
+        Set<String> ids = new LinkedHashSet<>();
+        if (workspace.plan != null) workspace.plan.tasks.forEach(task -> ids.add(task.problemId));
+        if (workspace.proposal != null) workspace.proposal.plan.tasks.forEach(task -> ids.add(task.problemId));
+        workspace.history.forEach(plan -> plan.tasks.forEach(task -> ids.add(task.problemId)));
+        workspace.feedback.forEach(feedback -> ids.add(feedback.problemId));
+        return ids.stream().map(catalogById::get).filter(Objects::nonNull).toList();
+    }
+
+    public long latestSubmission(long userId, String handle) {
+        Long latest = db.queryForObject("SELECT MAX(submission_id) FROM cf_submissions WHERE user_id=? AND LOWER(handle)=LOWER(?)", Long.class, userId, handle);
+        return latest == null ? 0 : latest;
+    }
+
+    public Set<String> attempted(long userId, String handle) {
+        return new HashSet<>(db.queryForList("SELECT DISTINCT problem_id FROM cf_submissions WHERE user_id=? AND LOWER(handle)=LOWER(?)", String.class, userId, handle));
+    }
+
+    public Map<String, long[]> acceptedStats(long userId, String handle) {
+        Map<String, long[]> result = new HashMap<>();
+        db.query("SELECT problem_id,MIN(submitted_at) AS first_ac,MAX(submitted_at) AS last_ac,COUNT(*) AS ac_count FROM cf_submissions WHERE user_id=? AND LOWER(handle)=LOWER(?) AND verdict='OK' GROUP BY problem_id", rs -> {
+            result.put(rs.getString("problem_id"), new long[]{rs.getLong("first_ac"), rs.getLong("last_ac"), rs.getLong("ac_count")});
+        }, userId, handle);
+        return result;
+    }
+
+    public void alignSyncedTasks(long userId, Workspace workspace) {
+        Set<String> accepted = solved(userId, workspace.profile.handle);
+        if (workspace.plan == null) return;
+        for (Task task : workspace.plan.tasks) {
+            if (task.status.equals("todo") && accepted.contains(task.problemId)) task.status = "synced";
+            else if (task.status.equals("synced") && !accepted.contains(task.problemId)) task.status = "todo";
+        }
+    }
+
+    public Map<String, Object> codeforcesEvidence(long userId, Workspace workspace) {
+        String handle = workspace.profile.handle;
+        if (handle.isBlank() || workspace.sync.syncedAt == null || !handle.equalsIgnoreCase(workspace.sync.handle)) {
+            return Map.of("handle", handle, "synced", false);
+        }
+        List<Map<String, Object>> recent = db.queryForList("""
+                SELECT submission_id,problem_id,verdict,submitted_at FROM cf_submissions
+                WHERE user_id=? AND LOWER(handle)=LOWER(?) ORDER BY submitted_at DESC,submission_id DESC LIMIT 40
+                """, userId, handle);
+        var attempted = attempted(userId, handle);
+        var solved = solved(userId, handle);
+        Map<String, int[]> difficulty = new TreeMap<>();
+        for (Problem problem : problems()) {
+            if (problem.rating == null || !attempted.contains(problem.id)) continue;
+            int[] counts = difficulty.computeIfAbsent(problem.difficulty, key -> new int[2]);
+            counts[0]++;
+            if (solved.contains(problem.id)) counts[1]++;
+        }
+        Map<String, Object> evidence = new LinkedHashMap<>();
+        evidence.put("synced", true);
+        evidence.put("summary", workspace.sync);
+        evidence.put("recentSubmissions", recent);
+        evidence.put("catalogDifficultyAttemptedAndAccepted", difficulty);
+        return evidence;
+    }
+
+    public List<Submission> submissionsBetween(long userId, String handle, long start, long end) {
+        return db.query("""
+                SELECT submission_id,problem_id,verdict,submitted_at FROM cf_submissions
+                WHERE user_id=? AND LOWER(handle)=LOWER(?) AND submitted_at>=? AND submitted_at<?
+                """, (rs, row) -> new Submission(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getLong(4)),
+                userId, handle, start, end);
     }
 
     public Set<String> solved(long userId, String handle) {
@@ -131,12 +224,7 @@ public class CoachStore {
             workspace.sync = info;
             Set<String> solved = solved(userId, handle);
             info.solvedCount = solved.size();
-            if (workspace.plan != null) {
-                for (Task task : workspace.plan.tasks) {
-                    if (task.status.equals("todo") && solved.contains(task.problemId)) task.status = "synced";
-                    else if (task.status.equals("synced") && !solved.contains(task.problemId)) task.status = "todo";
-                }
-            }
+            alignSyncedTasks(userId, workspace);
             workspace.proposal = null;
             save(userId, snapshot.revision(), workspace);
         });
@@ -157,7 +245,7 @@ public class CoachStore {
         catch (Exception ex) { throw new IllegalStateException("无法保存数据", ex); }
     }
 
-    private <T> T decode(String payload, Class<T> type) {
+    <T> T decode(String payload, Class<T> type) {
         try { return json.readValue(payload, type); }
         catch (Exception ex) { throw new IllegalStateException("无法读取数据", ex); }
     }
@@ -191,6 +279,7 @@ public class CoachStore {
                 feedback.minutes = i == 0 ? 32 : 55;
                 feedback.outcome = task.status;
                 feedback.note = i == 0 ? "独立完成，注意 upper_bound 的边界。" : "参考题解才理清边界，想再做一道同类题。";
+                feedback.causes = Nlp.causes(feedback.note).stream().map(Nlp.Cause::tag).toList();
                 feedback.createdAt = monday.plusDays(i).atTime(20, 30).atZone(ZoneId.of("Asia/Shanghai")).toInstant().toString();
                 workspace.feedback.add(feedback);
             }

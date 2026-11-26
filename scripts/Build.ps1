@@ -6,8 +6,24 @@ $maven = Find-Maven
 
 Push-Location "$projectRoot/frontend"
 try {
-    & npm.cmd ci --no-audit --no-fund
-    if ($LASTEXITCODE -ne 0) { throw 'Frontend dependency installation failed.' }
+    # Skip npm ci when the lockfile is unchanged: reinstalling wipes node_modules and is slow.
+    $lock = "$projectRoot/frontend/package-lock.json"
+    $marker = "$projectRoot/frontend/node_modules/.xunlian-lock"
+    $hash = if (Test-Path -LiteralPath $lock) { (Get-FileHash -Algorithm SHA256 -LiteralPath $lock).Hash } else { '' }
+    $installed = Test-Path -LiteralPath $marker
+    $current = if ($installed) { (Get-Content -LiteralPath $marker -Raw).Trim() } else { '' }
+    $healthy = Test-Path -LiteralPath "$projectRoot/frontend/node_modules/.bin/vue-tsc.cmd"
+    if (-not $installed -or $current -ne $hash) {
+        & npm.cmd ci --no-audit --no-fund
+        if ($LASTEXITCODE -ne 0) { throw 'Frontend dependency installation failed.' }
+        Set-Content -LiteralPath $marker -Value $hash -Encoding utf8
+    } elseif (-not $healthy) {
+        # 上一次安装被中断时补全，不整体清空 node_modules。
+        & npm.cmd install --no-audit --no-fund
+        if ($LASTEXITCODE -ne 0) { throw 'Frontend dependency repair failed.' }
+    } else {
+        Write-Host 'Frontend dependencies unchanged, skipping npm ci.'
+    }
     & npm.cmd run build
     if ($LASTEXITCODE -ne 0) { throw 'Frontend build failed.' }
     $static = "$projectRoot/backend/src/main/resources/static"
