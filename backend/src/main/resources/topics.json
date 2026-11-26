@@ -1,0 +1,1446 @@
+[
+  {
+    "name": "复杂度分析",
+    "category": "基础",
+    "cfTag": "",
+    "prerequisites": [],
+    "summary": "从输入规模估算操作次数与内存占用。",
+    "steps": [
+      "区分平均与最坏情况",
+      "计算循环总次数",
+      "估算递归深度"
+    ],
+    "examples": []
+  },
+  {
+    "name": "模拟",
+    "category": "基础",
+    "cfTag": "implementation",
+    "prerequisites": [
+      "复杂度分析"
+    ],
+    "summary": "按照操作顺序维护程序状态。",
+    "steps": [
+      "明确状态变化",
+      "检查空输入和边界",
+      "手算最小样例"
+    ],
+    "examples": []
+  },
+  {
+    "name": "枚举",
+    "category": "基础",
+    "cfTag": "brute force",
+    "prerequisites": [
+      "复杂度分析"
+    ],
+    "summary": "列出完整候选并逐个验证约束。",
+    "steps": [
+      "证明没有遗漏",
+      "控制候选规模",
+      "区分重复答案"
+    ],
+    "examples": []
+  },
+  {
+    "name": "排序",
+    "category": "基础",
+    "cfTag": "sortings",
+    "prerequisites": [
+      "复杂度分析"
+    ],
+    "summary": "利用有序结构简化查询、统计与决策。",
+    "steps": [
+      "确定排序关键字",
+      "检查比较器",
+      "处理相等元素"
+    ],
+    "examples": [
+      "LG-P1803",
+      "LG-P1496"
+    ]
+  },
+  {
+    "name": "前缀和与差分",
+    "category": "基础",
+    "cfTag": "",
+    "prerequisites": [
+      "模拟"
+    ],
+    "summary": "通过前缀累计处理区间查询，通过差分合并区间修改。",
+    "steps": [
+      "统一区间端点",
+      "保留零位置",
+      "检查累加溢出"
+    ],
+    "examples": [
+      "LG-P1083"
+    ]
+  },
+  {
+    "name": "离散化",
+    "category": "基础",
+    "cfTag": "",
+    "prerequisites": [
+      "排序"
+    ],
+    "summary": "将相对顺序映射到紧凑下标。",
+    "steps": [
+      "排序去重",
+      "保留原值映射",
+      "区分下标和距离"
+    ],
+    "examples": [
+      "LG-P1496"
+    ]
+  },
+  {
+    "name": "位运算",
+    "category": "基础",
+    "cfTag": "bitmasks",
+    "prerequisites": [
+      "枚举"
+    ],
+    "summary": "用二进制位表示状态、集合和按位关系。",
+    "steps": [
+      "检查位宽",
+      "理解与或异或",
+      "处理空集合"
+    ],
+    "examples": []
+  },
+  {
+    "name": "递归",
+    "category": "基础",
+    "cfTag": "",
+    "prerequisites": [
+      "模拟"
+    ],
+    "summary": "用子问题、终止条件和返回值组织求解。",
+    "steps": [
+      "定义递归不变量",
+      "证明终止",
+      "检查栈空间"
+    ],
+    "examples": []
+  },
+  {
+    "name": "双指针",
+    "category": "算法策略",
+    "cfTag": "two pointers",
+    "prerequisites": [
+      "排序"
+    ],
+    "summary": "通过单调移动减少重复遍历。",
+    "steps": [
+      "定义窗口不变量",
+      "证明移动单调性",
+      "检查空窗口"
+    ],
+    "examples": [
+      "LG-P1102"
+    ]
+  },
+  {
+    "name": "二分",
+    "category": "算法策略",
+    "cfTag": "binary search",
+    "prerequisites": [
+      "排序"
+    ],
+    "summary": "在有序序列或单调判定中定位边界。",
+    "steps": [
+      "定义边界含义",
+      "证明单调性",
+      "检查最终位置"
+    ],
+    "examples": [
+      "LG-P2249",
+      "LG-P1102"
+    ]
+  },
+  {
+    "name": "二分答案",
+    "category": "算法策略",
+    "cfTag": "",
+    "prerequisites": [
+      "二分"
+    ],
+    "summary": "将最优化问题转化为可行性判断。",
+    "steps": [
+      "定义判定函数",
+      "验证单调性",
+      "确定答案上下界"
+    ],
+    "examples": [
+      "LG-P1873",
+      "LG-P2440",
+      "LG-P1083"
+    ]
+  },
+  {
+    "name": "三分",
+    "category": "算法策略",
+    "cfTag": "ternary search",
+    "prerequisites": [
+      "二分"
+    ],
+    "summary": "利用单峰性质定位极值。",
+    "steps": [
+      "验证单峰条件",
+      "区分整数和实数",
+      "控制精度"
+    ],
+    "examples": [
+      "LG-P3382"
+    ]
+  },
+  {
+    "name": "贪心",
+    "category": "算法策略",
+    "cfTag": "greedy",
+    "prerequisites": [
+      "排序"
+    ],
+    "summary": "利用可证明的局部决策构造全局解。",
+    "steps": [
+      "尝试交换论证",
+      "说明选择的安全性",
+      "寻找反例"
+    ],
+    "examples": [
+      "LG-P1803",
+      "LG-P1090"
+    ]
+  },
+  {
+    "name": "构造",
+    "category": "算法策略",
+    "cfTag": "constructive algorithms",
+    "prerequisites": [
+      "枚举"
+    ],
+    "summary": "利用必要条件和不变量构造合法对象。",
+    "steps": [
+      "列出必要条件",
+      "建立构造不变量",
+      "检查全部约束"
+    ],
+    "examples": []
+  },
+  {
+    "name": "分治",
+    "category": "算法策略",
+    "cfTag": "divide and conquer",
+    "prerequisites": [
+      "递归"
+    ],
+    "summary": "拆分子问题并合并结果。",
+    "steps": [
+      "定义拆分",
+      "处理跨区间贡献",
+      "计算递推复杂度"
+    ],
+    "examples": [
+      "LG-P1908"
+    ]
+  },
+  {
+    "name": "折半搜索",
+    "category": "算法策略",
+    "cfTag": "meet-in-the-middle",
+    "prerequisites": [
+      "枚举",
+      "排序"
+    ],
+    "summary": "分开枚举两部分状态，再进行匹配。",
+    "steps": [
+      "定义合并条件",
+      "控制存储",
+      "处理重复状态"
+    ],
+    "examples": []
+  },
+  {
+    "name": "搜索",
+    "category": "搜索",
+    "cfTag": "dfs and similar",
+    "prerequisites": [
+      "递归"
+    ],
+    "summary": "枚举状态及其转移，选择合适的遍历顺序。",
+    "steps": [
+      "完整描述状态",
+      "处理重复状态",
+      "估算状态空间"
+    ],
+    "examples": [
+      "LG-P1379"
+    ]
+  },
+  {
+    "name": "深度优先搜索",
+    "category": "搜索",
+    "cfTag": "",
+    "prerequisites": [
+      "搜索"
+    ],
+    "summary": "沿路径深入探索，通过栈维护现场。",
+    "steps": [
+      "定义进入和退出操作",
+      "维护访问标记",
+      "检查栈深度"
+    ],
+    "examples": [
+      "LG-P1162",
+      "LG-P1605",
+      "LG-P1451"
+    ]
+  },
+  {
+    "name": "广度优先搜索",
+    "category": "搜索",
+    "cfTag": "",
+    "prerequisites": [
+      "搜索"
+    ],
+    "summary": "按层扩展状态，求等代价边上的最少步数。",
+    "steps": [
+      "入队时去重",
+      "解释分层距离",
+      "处理起终点重合"
+    ],
+    "examples": [
+      "LG-P1162",
+      "LG-P1443"
+    ]
+  },
+  {
+    "name": "回溯与剪枝",
+    "category": "搜索",
+    "cfTag": "",
+    "prerequisites": [
+      "深度优先搜索"
+    ],
+    "summary": "恢复搜索现场，并用可证明条件缩小分支。",
+    "steps": [
+      "证明剪枝安全",
+      "先做低代价判定",
+      "恢复全部现场"
+    ],
+    "examples": [
+      "LG-P1025",
+      "LG-P1605",
+      "LG-P1219"
+    ]
+  },
+  {
+    "name": "记忆化搜索",
+    "category": "搜索",
+    "cfTag": "",
+    "prerequisites": [
+      "搜索",
+      "动态规划"
+    ],
+    "summary": "缓存相同子问题的结果。",
+    "steps": [
+      "保证状态充分",
+      "区分未计算与零答案",
+      "检查依赖是否有环"
+    ],
+    "examples": [
+      "LG-P1434"
+    ]
+  },
+  {
+    "name": "双向搜索",
+    "category": "搜索",
+    "cfTag": "",
+    "prerequisites": [
+      "广度优先搜索"
+    ],
+    "summary": "从起点和终点扩展并连接相遇状态。",
+    "steps": [
+      "验证逆向转移",
+      "记录两侧距离",
+      "检查相遇条件"
+    ],
+    "examples": [
+      "LG-P1379"
+    ]
+  },
+  {
+    "name": "动态规划",
+    "category": "动态规划",
+    "cfTag": "dp",
+    "prerequisites": [
+      "复杂度分析"
+    ],
+    "summary": "用状态表达子问题，再按依赖顺序计算。",
+    "steps": [
+      "解释状态含义",
+      "验证转移完备性",
+      "检查初始化"
+    ],
+    "examples": [
+      "LG-P1434",
+      "LG-P3387"
+    ]
+  },
+  {
+    "name": "线性DP",
+    "category": "动态规划",
+    "cfTag": "",
+    "prerequisites": [
+      "动态规划"
+    ],
+    "summary": "按序列或阶段推进状态。",
+    "steps": [
+      "区分前缀与结尾状态",
+      "处理不可达状态",
+      "检查滚动顺序"
+    ],
+    "examples": [
+      "LG-P1216",
+      "LG-P1113"
+    ]
+  },
+  {
+    "name": "背包DP",
+    "category": "动态规划",
+    "cfTag": "",
+    "prerequisites": [
+      "动态规划"
+    ],
+    "summary": "通过容量与物品选择表达资源分配。",
+    "steps": [
+      "区分零一和完全背包",
+      "明确容量语义",
+      "验证遍历方向"
+    ],
+    "examples": [
+      "LG-P1048",
+      "LG-P1049",
+      "LG-P1060"
+    ]
+  },
+  {
+    "name": "区间DP",
+    "category": "动态规划",
+    "cfTag": "",
+    "prerequisites": [
+      "动态规划"
+    ],
+    "summary": "拆分或合并区间求解结构化问题。",
+    "steps": [
+      "按长度计算",
+      "确定分割范围",
+      "分析合并复杂度"
+    ],
+    "examples": [
+      "LG-P1880"
+    ]
+  },
+  {
+    "name": "树形DP",
+    "category": "动态规划",
+    "cfTag": "",
+    "prerequisites": [
+      "动态规划",
+      "树上遍历"
+    ],
+    "summary": "沿树的父子关系合并子树状态。",
+    "steps": [
+      "解释根与状态的关系",
+      "确定合并顺序",
+      "处理叶子"
+    ],
+    "examples": [
+      "LG-P1352"
+    ]
+  },
+  {
+    "name": "状压DP",
+    "category": "动态规划",
+    "cfTag": "",
+    "prerequisites": [
+      "动态规划",
+      "位运算"
+    ],
+    "summary": "使用二进制集合表示组合状态。",
+    "steps": [
+      "解释每一位",
+      "估算状态数量",
+      "检查集合转移"
+    ],
+    "examples": [
+      "LG-P1896"
+    ]
+  },
+  {
+    "name": "数位DP",
+    "category": "动态规划",
+    "cfTag": "",
+    "prerequisites": [
+      "动态规划",
+      "数论"
+    ],
+    "summary": "逐位构造数字，记录前缀和上界条件。",
+    "steps": [
+      "处理前导零",
+      "区分上界限制",
+      "转换区间为前缀计数"
+    ],
+    "examples": [
+      "LG-P2657"
+    ]
+  },
+  {
+    "name": "概率与期望DP",
+    "category": "动态规划",
+    "cfTag": "",
+    "prerequisites": [
+      "动态规划",
+      "数学"
+    ],
+    "summary": "由随机转移建立概率或期望关系。",
+    "steps": [
+      "区分概率和期望",
+      "写清条件事件",
+      "检查终止状态"
+    ],
+    "examples": [
+      "LG-P4316"
+    ]
+  },
+  {
+    "name": "数据结构",
+    "category": "数据结构",
+    "cfTag": "data structures",
+    "prerequisites": [
+      "复杂度分析"
+    ],
+    "summary": "根据查询和修改的要求组织数据。",
+    "steps": [
+      "列出操作频率",
+      "定义维护信息",
+      "检查空间复杂度"
+    ],
+    "examples": []
+  },
+  {
+    "name": "栈与队列",
+    "category": "数据结构",
+    "cfTag": "",
+    "prerequisites": [
+      "数据结构"
+    ],
+    "summary": "利用后进先出或先进先出顺序处理数据。",
+    "steps": [
+      "解释进出顺序",
+      "处理空结构",
+      "检查容量"
+    ],
+    "examples": []
+  },
+  {
+    "name": "堆与优先队列",
+    "category": "数据结构",
+    "cfTag": "",
+    "prerequisites": [
+      "数据结构"
+    ],
+    "summary": "动态维护最优元素。",
+    "steps": [
+      "确定大小根方向",
+      "检查比较器",
+      "丢弃失效状态"
+    ],
+    "examples": [
+      "LG-P1090",
+      "LG-P3378"
+    ]
+  },
+  {
+    "name": "并查集",
+    "category": "数据结构",
+    "cfTag": "dsu",
+    "prerequisites": [
+      "数据结构"
+    ],
+    "summary": "通过集合代表元维护连通关系。",
+    "steps": [
+      "初始化代表元",
+      "使用压缩与按大小合并",
+      "维护附加关系"
+    ],
+    "examples": [
+      "LG-P3367"
+    ]
+  },
+  {
+    "name": "树状数组",
+    "category": "数据结构",
+    "cfTag": "",
+    "prerequisites": [
+      "前缀和与差分",
+      "位运算"
+    ],
+    "summary": "维护可分解的前缀信息。",
+    "steps": [
+      "从一下标开始",
+      "解释lowbit",
+      "验证更新与查询方向"
+    ],
+    "examples": [
+      "LG-P1908",
+      "LG-P3374"
+    ]
+  },
+  {
+    "name": "线段树",
+    "category": "数据结构",
+    "cfTag": "",
+    "prerequisites": [
+      "数据结构",
+      "分治"
+    ],
+    "summary": "合并区间信息，支持动态查询和修改。",
+    "steps": [
+      "定义合并运算",
+      "维护懒标记",
+      "检查交集边界"
+    ],
+    "examples": [
+      "LG-P3372"
+    ]
+  },
+  {
+    "name": "ST表",
+    "category": "数据结构",
+    "cfTag": "",
+    "prerequisites": [
+      "数据结构",
+      "位运算"
+    ],
+    "summary": "预处理倍长区间以回答静态幂等查询。",
+    "steps": [
+      "验证幂等性",
+      "计算区间长度",
+      "检查空间"
+    ],
+    "examples": [
+      "LG-P3865"
+    ]
+  },
+  {
+    "name": "单调栈",
+    "category": "数据结构",
+    "cfTag": "",
+    "prerequisites": [
+      "栈与队列"
+    ],
+    "summary": "维护有序候选以定位相邻极值关系。",
+    "steps": [
+      "定义单调方向",
+      "处理相等元素",
+      "解释弹出时机"
+    ],
+    "examples": [
+      "LG-P5788"
+    ]
+  },
+  {
+    "name": "单调队列",
+    "category": "数据结构",
+    "cfTag": "",
+    "prerequisites": [
+      "栈与队列",
+      "双指针"
+    ],
+    "summary": "维护滑动窗口中仍可能成为最优的候选。",
+    "steps": [
+      "移除过期元素",
+      "移除劣势候选",
+      "检查窗口边界"
+    ],
+    "examples": [
+      "LG-P1886"
+    ]
+  },
+  {
+    "name": "平衡树",
+    "category": "数据结构",
+    "cfTag": "",
+    "prerequisites": [
+      "数据结构"
+    ],
+    "summary": "维护动态有序集合与顺序统计。",
+    "steps": [
+      "处理重复值",
+      "维护子树大小",
+      "核对旋转或分裂"
+    ],
+    "examples": [
+      "LG-P3369"
+    ]
+  },
+  {
+    "name": "可持久化数据结构",
+    "category": "数据结构",
+    "cfTag": "",
+    "prerequisites": [
+      "线段树"
+    ],
+    "summary": "共享未修改节点以保留历史版本。",
+    "steps": [
+      "区分版本根",
+      "仅复制修改路径",
+      "估算节点总量"
+    ],
+    "examples": [
+      "LG-P3834"
+    ]
+  },
+  {
+    "name": "图论",
+    "category": "图论",
+    "cfTag": "graphs",
+    "prerequisites": [
+      "数据结构"
+    ],
+    "summary": "用点、边和路径表示关系。",
+    "steps": [
+      "区分有向与无向",
+      "处理重边自环",
+      "考虑不连通图"
+    ],
+    "examples": []
+  },
+  {
+    "name": "最短路",
+    "category": "图论",
+    "cfTag": "shortest paths",
+    "prerequisites": [
+      "图论"
+    ],
+    "summary": "根据边权条件选择最小路径算法。",
+    "steps": [
+      "识别负权与负环",
+      "处理不可达",
+      "检查距离溢出"
+    ],
+    "examples": [
+      "LG-P3371"
+    ]
+  },
+  {
+    "name": "Dijkstra",
+    "category": "图论",
+    "cfTag": "",
+    "prerequisites": [
+      "最短路",
+      "堆与优先队列"
+    ],
+    "summary": "逐步确定非负边权图中的最短距离。",
+    "steps": [
+      "保证边权非负",
+      "跳过过期状态",
+      "使用足够宽的距离类型"
+    ],
+    "examples": [
+      "LG-P4779"
+    ]
+  },
+  {
+    "name": "Bellman-Ford与SPFA",
+    "category": "图论",
+    "cfTag": "",
+    "prerequisites": [
+      "最短路"
+    ],
+    "summary": "通过松弛处理负边及负环判定。",
+    "steps": [
+      "区分负边和负环",
+      "处理不可达",
+      "分析最坏复杂度"
+    ],
+    "examples": [
+      "LG-P3385"
+    ]
+  },
+  {
+    "name": "Floyd",
+    "category": "图论",
+    "cfTag": "",
+    "prerequisites": [
+      "最短路",
+      "动态规划"
+    ],
+    "summary": "按中间点集合计算全源最短距离。",
+    "steps": [
+      "中间点循环放外层",
+      "初始化对角线",
+      "检查无穷值相加"
+    ],
+    "examples": [
+      "LG-P1119"
+    ]
+  },
+  {
+    "name": "最小生成树",
+    "category": "图论",
+    "cfTag": "",
+    "prerequisites": [
+      "图论",
+      "并查集"
+    ],
+    "summary": "选择连接全部节点且总权最小的边集。",
+    "steps": [
+      "检查连通性",
+      "理解安全边",
+      "明确优化目标"
+    ],
+    "examples": [
+      "LG-P3366"
+    ]
+  },
+  {
+    "name": "拓扑排序",
+    "category": "图论",
+    "cfTag": "",
+    "prerequisites": [
+      "图论",
+      "栈与队列"
+    ],
+    "summary": "按有向无环图的依赖顺序处理节点。",
+    "steps": [
+      "维护入度",
+      "检查处理节点数",
+      "结合依赖做DP"
+    ],
+    "examples": [
+      "LG-P4316",
+      "LG-P1113"
+    ]
+  },
+  {
+    "name": "强连通分量",
+    "category": "图论",
+    "cfTag": "",
+    "prerequisites": [
+      "图论",
+      "深度优先搜索"
+    ],
+    "summary": "把有向图中的互相可达区域缩成分量。",
+    "steps": [
+      "区分栈内点",
+      "维护low值",
+      "处理缩点后的重边"
+    ],
+    "examples": [
+      "LG-P3387"
+    ]
+  },
+  {
+    "name": "桥与割点",
+    "category": "图论",
+    "cfTag": "",
+    "prerequisites": [
+      "图论",
+      "深度优先搜索"
+    ],
+    "summary": "判断删除边或点对连通性的影响。",
+    "steps": [
+      "用边编号识别父边",
+      "处理DFS根",
+      "考虑重边"
+    ],
+    "examples": [
+      "LG-P1656"
+    ]
+  },
+  {
+    "name": "二分图匹配",
+    "category": "图论",
+    "cfTag": "graph matchings",
+    "prerequisites": [
+      "图论",
+      "搜索"
+    ],
+    "summary": "寻找互不冲突的二分图配对关系。",
+    "steps": [
+      "确认二分划分",
+      "寻找增广路",
+      "正确更新匹配"
+    ],
+    "examples": [
+      "LG-P3386"
+    ]
+  },
+  {
+    "name": "网络流",
+    "category": "图论",
+    "cfTag": "flows",
+    "prerequisites": [
+      "图论",
+      "广度优先搜索"
+    ],
+    "summary": "通过容量和守恒条件表达分配问题。",
+    "steps": [
+      "建立反向边",
+      "明确容量语义",
+      "逐项核对建图约束"
+    ],
+    "examples": [
+      "LG-P3376"
+    ]
+  },
+  {
+    "name": "最小费用流",
+    "category": "图论",
+    "cfTag": "",
+    "prerequisites": [
+      "网络流",
+      "最短路"
+    ],
+    "summary": "在流量要求下优化费用。",
+    "steps": [
+      "维护反向费用",
+      "确定流量目标",
+      "处理残量网络的负边"
+    ],
+    "examples": [
+      "LG-P3381"
+    ]
+  },
+  {
+    "name": "2-SAT",
+    "category": "图论",
+    "cfTag": "2-sat",
+    "prerequisites": [
+      "强连通分量"
+    ],
+    "summary": "将二元逻辑约束转换为蕴含图。",
+    "steps": [
+      "确定取反节点",
+      "完整添加蕴含边",
+      "检查互否节点的分量"
+    ],
+    "examples": [
+      "LG-P4782"
+    ]
+  },
+  {
+    "name": "欧拉路",
+    "category": "图论",
+    "cfTag": "",
+    "prerequisites": [
+      "图论",
+      "栈与队列"
+    ],
+    "summary": "寻找每条边恰好经过一次的路径。",
+    "steps": [
+      "检查度数条件",
+      "标记边而非顶点",
+      "处理路径逆序"
+    ],
+    "examples": [
+      "LG-P7771"
+    ]
+  },
+  {
+    "name": "树上遍历",
+    "category": "树算法",
+    "cfTag": "trees",
+    "prerequisites": [
+      "图论",
+      "深度优先搜索"
+    ],
+    "summary": "利用父子和子树关系处理树上信息。",
+    "steps": [
+      "明确根与父节点",
+      "检查递归深度",
+      "处理单点树"
+    ],
+    "examples": [
+      "LG-P3379"
+    ]
+  },
+  {
+    "name": "LCA与倍增",
+    "category": "树算法",
+    "cfTag": "",
+    "prerequisites": [
+      "树上遍历",
+      "位运算"
+    ],
+    "summary": "预处理倍长祖先，定位最近公共祖先。",
+    "steps": [
+      "先统一深度",
+      "从高位跳跃",
+      "设置根的祖先"
+    ],
+    "examples": [
+      "LG-P3379"
+    ]
+  },
+  {
+    "name": "树链剖分",
+    "category": "树算法",
+    "cfTag": "",
+    "prerequisites": [
+      "LCA与倍增",
+      "线段树"
+    ],
+    "summary": "把树上路径拆成连续区间。",
+    "steps": [
+      "区分DFS序与重链",
+      "明确点权边权",
+      "检查路径端点"
+    ],
+    "examples": [
+      "LG-P3384"
+    ]
+  },
+  {
+    "name": "点分治",
+    "category": "树算法",
+    "cfTag": "",
+    "prerequisites": [
+      "树上遍历",
+      "分治"
+    ],
+    "summary": "通过重心分解统计跨子树路径。",
+    "steps": [
+      "找对重心",
+      "排除同子树重复贡献",
+      "清理辅助状态"
+    ],
+    "examples": [
+      "LG-P3806"
+    ]
+  },
+  {
+    "name": "数学",
+    "category": "数学",
+    "cfTag": "math",
+    "prerequisites": [
+      "复杂度分析"
+    ],
+    "summary": "从数量关系、性质与不变量建立模型。",
+    "steps": [
+      "先推导再实现",
+      "区分整数与实数",
+      "检查溢出与取模"
+    ],
+    "examples": []
+  },
+  {
+    "name": "数论",
+    "category": "数学",
+    "cfTag": "number theory",
+    "prerequisites": [
+      "数学"
+    ],
+    "summary": "研究整数中的整除、同余与结构。",
+    "steps": [
+      "验证数学条件",
+      "处理零和负数",
+      "估算运算范围"
+    ],
+    "examples": []
+  },
+  {
+    "name": "质数与筛法",
+    "category": "数学",
+    "cfTag": "",
+    "prerequisites": [
+      "数论"
+    ],
+    "summary": "利用整数结构批量判定质数。",
+    "steps": [
+      "排除零和一",
+      "控制重复标记",
+      "避免乘法溢出"
+    ],
+    "examples": [
+      "LG-P3383"
+    ]
+  },
+  {
+    "name": "快速幂",
+    "category": "数学",
+    "cfTag": "",
+    "prerequisites": [
+      "数学",
+      "位运算"
+    ],
+    "summary": "根据指数二进制展开计算幂。",
+    "steps": [
+      "处理零次幂",
+      "乘法及时取模",
+      "检查乘法类型"
+    ],
+    "examples": [
+      "LG-P1226"
+    ]
+  },
+  {
+    "name": "扩展欧几里得与逆元",
+    "category": "数学",
+    "cfTag": "",
+    "prerequisites": [
+      "数论"
+    ],
+    "summary": "利用贝祖关系求解同余与逆元。",
+    "steps": [
+      "检查逆元存在条件",
+      "规范负数取模",
+      "验证系数类型"
+    ],
+    "examples": [
+      "LG-P1082"
+    ]
+  },
+  {
+    "name": "中国剩余定理",
+    "category": "数学",
+    "cfTag": "chinese remainder theorem",
+    "prerequisites": [
+      "扩展欧几里得与逆元"
+    ],
+    "summary": "合并同余方程并检查相容性。",
+    "steps": [
+      "处理不互质模数",
+      "计算最小公倍数",
+      "规范解的范围"
+    ],
+    "examples": [
+      "LG-P1495"
+    ]
+  },
+  {
+    "name": "组合计数",
+    "category": "数学",
+    "cfTag": "combinatorics",
+    "prerequisites": [
+      "数学"
+    ],
+    "summary": "通过分类、递推和容斥计算方案数。",
+    "steps": [
+      "明确计数对象",
+      "排除重复遗漏",
+      "检查模意义除法"
+    ],
+    "examples": [
+      "LG-P3807"
+    ]
+  },
+  {
+    "name": "博弈论",
+    "category": "数学",
+    "cfTag": "games",
+    "prerequisites": [
+      "动态规划",
+      "数学"
+    ],
+    "summary": "通过转移关系分析对抗状态的胜负。",
+    "steps": [
+      "明确合法操作",
+      "从终止状态逆推",
+      "检查SG适用条件"
+    ],
+    "examples": [
+      "LG-P2197"
+    ]
+  },
+  {
+    "name": "矩阵与线性代数",
+    "category": "数学",
+    "cfTag": "matrices",
+    "prerequisites": [
+      "数学"
+    ],
+    "summary": "使用向量、矩阵与线性关系表示计算问题。",
+    "steps": [
+      "核对矩阵维数",
+      "定义线性关系",
+      "区分不同矩阵运算"
+    ],
+    "examples": []
+  },
+  {
+    "name": "概率与期望",
+    "category": "数学",
+    "cfTag": "probabilities",
+    "prerequisites": [
+      "数学"
+    ],
+    "summary": "根据随机事件与分布计算概率和期望。",
+    "steps": [
+      "明确样本空间",
+      "检查独立性条件",
+      "使用期望的线性性质"
+    ],
+    "examples": []
+  },
+  {
+    "name": "矩阵快速幂",
+    "category": "数学",
+    "cfTag": "",
+    "prerequisites": [
+      "快速幂"
+    ],
+    "summary": "用矩阵表达线性状态转移并快速迭代。",
+    "steps": [
+      "确定乘法方向",
+      "核对维数",
+      "设置单位矩阵"
+    ],
+    "examples": [
+      "LG-P3390"
+    ]
+  },
+  {
+    "name": "高斯消元",
+    "category": "数学",
+    "cfTag": "",
+    "prerequisites": [
+      "数学"
+    ],
+    "summary": "使用等价行变换求解线性方程组。",
+    "steps": [
+      "选择主元",
+      "区分无解和多解",
+      "检查精度"
+    ],
+    "examples": [
+      "LG-P3389"
+    ]
+  },
+  {
+    "name": "计算几何",
+    "category": "计算几何",
+    "cfTag": "geometry",
+    "prerequisites": [
+      "数学"
+    ],
+    "summary": "用向量、方向与距离处理几何关系。",
+    "steps": [
+      "理解叉积点积",
+      "统一精度规则",
+      "处理共线和重合"
+    ],
+    "examples": []
+  },
+  {
+    "name": "凸包",
+    "category": "计算几何",
+    "cfTag": "",
+    "prerequisites": [
+      "计算几何",
+      "排序"
+    ],
+    "summary": "构造覆盖点集的最小凸边界。",
+    "steps": [
+      "去除重复点",
+      "确定共线策略",
+      "检查旋转方向"
+    ],
+    "examples": [
+      "LG-P2742"
+    ]
+  },
+  {
+    "name": "字符串",
+    "category": "字符串",
+    "cfTag": "strings",
+    "prerequisites": [
+      "模拟"
+    ],
+    "summary": "利用前缀、后缀与重复结构处理序列。",
+    "steps": [
+      "统一下标范围",
+      "处理空串",
+      "估算匹配复杂度"
+    ],
+    "examples": []
+  },
+  {
+    "name": "字符串哈希",
+    "category": "字符串",
+    "cfTag": "hashing",
+    "prerequisites": [
+      "字符串",
+      "前缀和与差分"
+    ],
+    "summary": "将子串映射为可快速比较的数值。",
+    "steps": [
+      "统一子串端点",
+      "评估碰撞风险",
+      "检查模运算"
+    ],
+    "examples": [
+      "LG-P3370"
+    ]
+  },
+  {
+    "name": "KMP",
+    "category": "字符串",
+    "cfTag": "",
+    "prerequisites": [
+      "字符串"
+    ],
+    "summary": "复用前缀关系处理失配回退。",
+    "steps": [
+      "解释前缀函数",
+      "正确回退",
+      "支持重叠匹配"
+    ],
+    "examples": [
+      "LG-P3375"
+    ]
+  },
+  {
+    "name": "Trie",
+    "category": "字符串",
+    "cfTag": "",
+    "prerequisites": [
+      "字符串",
+      "数据结构"
+    ],
+    "summary": "共享字符串前缀维护字典。",
+    "steps": [
+      "区分路径和单词",
+      "估算节点数量",
+      "检查字符映射"
+    ],
+    "examples": [
+      "LG-P2580"
+    ]
+  },
+  {
+    "name": "Manacher",
+    "category": "字符串",
+    "cfTag": "",
+    "prerequisites": [
+      "字符串"
+    ],
+    "summary": "复用对称信息在线性时间求回文半径。",
+    "steps": [
+      "解释半径",
+      "处理奇偶映射",
+      "设置边界哨兵"
+    ],
+    "examples": [
+      "LG-P3805"
+    ]
+  },
+  {
+    "name": "AC自动机",
+    "category": "字符串",
+    "cfTag": "",
+    "prerequisites": [
+      "Trie",
+      "KMP",
+      "广度优先搜索"
+    ],
+    "summary": "使用失配指针同时匹配多个模式串。",
+    "steps": [
+      "BFS构建fail",
+      "累计匹配次数",
+      "处理重复模式串"
+    ],
+    "examples": [
+      "LG-P3808"
+    ]
+  },
+  {
+    "name": "后缀结构",
+    "category": "字符串",
+    "cfTag": "suffix structures",
+    "prerequisites": [
+      "字符串"
+    ],
+    "summary": "利用后缀与子串结构组织字符串信息。",
+    "steps": [
+      "区分不同后缀结构",
+      "明确统计对象",
+      "检查相邻与包含关系"
+    ],
+    "examples": []
+  },
+  {
+    "name": "后缀数组",
+    "category": "字符串",
+    "cfTag": "",
+    "prerequisites": [
+      "字符串",
+      "排序"
+    ],
+    "summary": "维护后缀排序和相邻公共前缀。",
+    "steps": [
+      "检查排名边界",
+      "构造高度数组",
+      "区分位置与排名"
+    ],
+    "examples": [
+      "LG-P3809"
+    ]
+  },
+  {
+    "name": "后缀自动机",
+    "category": "字符串",
+    "cfTag": "",
+    "prerequisites": [
+      "字符串",
+      "数据结构"
+    ],
+    "summary": "压缩所有子串的结束位置关系。",
+    "steps": [
+      "理解长度区间",
+      "处理克隆状态",
+      "按长度传播信息"
+    ],
+    "examples": [
+      "LG-P3804"
+    ]
+  },
+  {
+    "name": "多项式与FFT",
+    "category": "进阶",
+    "cfTag": "fft",
+    "prerequisites": [
+      "数学",
+      "分治"
+    ],
+    "summary": "使用傅里叶变换加速卷积。",
+    "steps": [
+      "选择补零长度",
+      "核对正逆变换",
+      "分析误差与取整"
+    ],
+    "examples": [
+      "LG-P3803"
+    ]
+  },
+  {
+    "name": "NTT",
+    "category": "进阶",
+    "cfTag": "",
+    "prerequisites": [
+      "快速幂",
+      "多项式与FFT"
+    ],
+    "summary": "在合适模数和原根下计算模卷积。",
+    "steps": [
+      "检查变换长度",
+      "正确计算逆变换",
+      "处理取模"
+    ],
+    "examples": [
+      "LG-P3803"
+    ]
+  }
+]

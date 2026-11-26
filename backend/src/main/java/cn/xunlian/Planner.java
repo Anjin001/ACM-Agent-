@@ -11,8 +11,9 @@ import static cn.xunlian.Models.*;
 @Service
 public class Planner {
     private final CoachStore store;
+    private final TopicService topics;
 
-    public Planner(CoachStore store) { this.store = store; }
+    public Planner(CoachStore store, TopicService topics) { this.store = store; this.topics = topics; }
 
     public static int trainingLevel(Workspace workspace) {
         return !workspace.profile.manualLevel && hasSyncedRating(workspace)
@@ -31,8 +32,12 @@ public class Planner {
         int target = trainingLevel(workspace);
         return store.problems().stream()
                 .filter(problem -> !problem.historicalOnly && !excluded.contains(problem.id))
-                .filter(problem -> problem.tags.stream().anyMatch(workspace.profile.topics::contains))
-                .filter(problem -> problem.rating == null ? target < 1600 || "计算几何".equals(String.join("", workspace.profile.topics)) : Math.abs((long) problem.rating - target) <= 200)
+                .filter(problem -> workspace.profile.topics.stream().anyMatch(topic -> topics.matches(problem, topic)))
+                .filter(problem -> {
+                    if (problem.rating != null) return Math.abs((long) problem.rating - target) <= 200;
+                    if (target >= problem.minLevel && target <= problem.maxLevel) return true;
+                    return target < 1600 || "计算几何".equals(String.join("", workspace.profile.topics));
+                })
                 .sorted(Comparator.comparingInt((Problem problem) -> problem.minutes).thenComparing(problem -> problem.id))
                 .toList();
     }
