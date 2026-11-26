@@ -23,12 +23,17 @@ export async function validateRoot(input, dataDir) {
   if (typeof input !== 'string' || !input.trim()) throw new Error('请输入代码目录路径');
   const root = await realpath(path.resolve(input));
   if (!(await stat(root)).isDirectory()) throw new Error('所选路径不是文件夹');
-  if (inside(dataDir, root)) throw new Error('不能将工具的数据目录作为源码目录');
+  // 数据目录同样规范化，避免 8.3 短路径与长路径比较失败。
+  const canonicalData = await realpath(path.resolve(dataDir)).catch(() => path.resolve(dataDir));
+  if (inside(canonicalData, root)) throw new Error('不能将工具的数据目录作为源码目录');
   return root;
 }
 
 // Do not follow links or junctions. Only recognized source files inside the selected root are read.
 export async function scanDirectory(root, dataDir) {
+  // 规范化两次：Windows 上 8.3 短路径（如 STARTL~1）会让 realpath 后的子路径看起来在根目录之外。
+  root = await realpath(root);
+  dataDir = await realpath(dataDir).catch(() => dataDir);
   const files = [];
   const skipped = [];
   let total = 0;

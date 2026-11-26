@@ -21,9 +21,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties="spring.datasource.url=jdbc:h2:mem:sync_tests;MODE=MySQL;DB_CLOSE_DELAY=-1")
+@SpringBootTest
 @AutoConfigureMockMvc
 class CodeforcesSyncTest {
+    // 与生产一致，测试也用 SQLite 临时库。
+    static final String DB_URL = "jdbc:sqlite:"
+            + java.nio.file.Path.of("target", "sync-test-" + UUID.randomUUID() + ".db").toAbsolutePath()
+            + "?journal_mode=WAL&busy_timeout=5000";
+
+    @DynamicPropertySource
+    static void sqlite(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", () -> DB_URL);
+    }
     static final HttpServer server;
     static final ObjectMapper fixtureJson = new ObjectMapper();
     static final java.util.concurrent.ExecutorService serverThreads = Executors.newCachedThreadPool();

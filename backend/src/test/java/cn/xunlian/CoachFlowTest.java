@@ -455,10 +455,14 @@ class CoachFlowTest {
         var workspace = store.snapshot(id).workspace();
         assertThat(Planner.trainingLevel(workspace)).isEqualTo(1900);
         var pool = planner.candidates(id, workspace);
-        assertThat(pool).isNotEmpty().allSatisfy(problem -> assertThat(problem.rating).isBetween(1700, 2100));
+        // CF 题按评分带筛选；洛谷精选题没有评分，按人工资讯的等级区间进入候选。
+        assertThat(pool).isNotEmpty().allSatisfy(problem ->
+                assertThat(problem.rating == null || (problem.rating >= 1700 && problem.rating <= 2100)).isTrue());
         workspace.profile.manualLevel = true;
         assertThat(Planner.trainingLevel(workspace)).isEqualTo(2400);
+    }
 
+    @Test
     void diagnosisTracksHintUseAndChallengesVerifyCounterexamples() throws Exception {
         MockHttpSession session=register();
         JsonNode catalog=json.readTree(mvc.perform(get("/api/learning").session(session)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));

@@ -6,7 +6,7 @@
 
 在 Windows 双击根目录的 `启动.bat`，然后访问 [训练工作台](http://127.0.0.1:18080)。首次进入课程演示空间，可以从左下角创建独立账号。
 
-首次构建需要联网，要求 Node.js 22.12+、npm、JDK 17+。脚本会寻找 `JAVA_HOME` 或常见安装目录中的 JDK，优先使用已有 Maven，缺少 Maven 时下载到用户缓存。首次构建会安装前端依赖、构建页面，并运行 15 项后端测试（10 项接口流程、5 项中文自然语言处理）。`frontend/node_modules` 存在且 `package-lock.json` 未变时会跳过依赖安装。
+首次构建需要联网，要求 Node.js 22.12+、npm、JDK 17+。脚本会寻找 `JAVA_HOME` 或常见安装目录中的 JDK，优先使用已有 Maven，缺少 Maven 时下载到用户缓存。首次构建会安装前端依赖、构建页面，并运行 28 项后端测试（19 项接口与教练流程、4 项 CF 同步、5 项中文自然语言处理）。`frontend/node_modules` 存在且 `package-lock.json` 未变时会跳过依赖安装。
 
 ```powershell
 # 构建并运行测试
@@ -199,3 +199,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start.ps1
 ## 更新题库
 
 运行 `node scripts/seed-catalog.mjs` 可从 CF 官方 API 刷新快照。也可以传入已下载的官方 JSON 文件路径。`scripts/topics.mjs` 是专题和洛谷精选练习的统一数据源。刷新后重新构建，已有个人记录会保留。
+
+## 版本来源与合并说明
+
+本仓库由 `soft/` 下的五个分支快照合并而成，合并过程保留了每个分支的独立提交历史（`git log --graph` 可查）：
+
+| 来源目录 | 主要内容 | 合并去向 |
+| --- | --- | --- |
+| `ACM-Agent--main` | 首版骨架：账号、计划、反馈、调整、撤销 | 作为合并基线 |
+| `ACM-Agent--sqlitwork` | SQLite 存储、教练记忆、能力画像、代码审查规则引擎 | 已包含在 CLY 中，作为基线分支保留 |
+| `ACM-Agent--CLY` | 能力评估、限时短测、代码工作区、本地模型配置 | 合并主干 |
+| `ACM-Agent--feat-gan-chenhua-acm-training` | 题库快照（11580 题）、84 个专题、诊断理解题、代码验证挑战、CF 完整/增量同步 | 并入主干：题库按 `id` 取并集（新增 2 道洛谷精选题），接口、导航、设置页逐一合并 |
+| `ACM-Agent--feat-local-code-memory` | 独立 `code-review/` 本地代码记忆应用 | 整体并入，路径与 Node 版本要求已调整 |
+
+合并中人工处理的冲突集中在：`CoachController`（接口取并集）、`Models`（工作区字段取并集）、`Planner`（候选过滤改为动态专题 + 等级区间）、`CodeforcesClient`（采用完整/增量同步并补写覆盖时间字段）、`App.vue`（导航与页面取并集，专题选择改为 `TopicPicker`）、`catalog.json`（按 id 合并 11582 题）。测试侧把 `CodeforcesSyncTest` 从 H2 切到与生产一致的 SQLite 临时库。
+
+验证结果：前端 `vue-tsc` 与 `vite build` 通过；后端 `mvn verify` 通过（28 项测试，0 失败）；打包后的 JAR 实际启动后，`/api/bootstrap`、`/api/problems`、`/api/learning`、`/api/memory`、`/api/profile/model`、`/api/plan/generate` 均返回 200，题库 11582 道、84 个专题；`code-review` 的 9 项测试全部通过。详见 `docs/验收记录.md` 的「合并版本复验」一节。
